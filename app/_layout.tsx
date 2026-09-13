@@ -15,10 +15,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors, font } from '../src/theme'
 import { Loading } from '../src/ui/components'
 import { LockScreen } from '../src/ui/LockScreen'
+import { UpdateGate } from '../src/ui/UpdateGate'
 import { useActiveStore } from '../src/lib/activeStore'
 import { useAuth } from '../src/lib/auth'
 import { LOCK_AFTER_BACKGROUND_MS, useScreenLock } from '../src/lib/screenLock'
 import { startOfflineQueueWatcher } from '../src/lib/offlineQueue'
+import { useReminder } from '../src/lib/reminder'
 
 // Shop staff work on patchy connections; don't hammer a dying link, and refresh
 // on regaining focus/reconnect since prices and orders are shared across devices.
@@ -39,7 +41,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return
-    const onLogin = segments[0] === 'login'
+    const onLogin = segments[0] === 'login' || segments[0] === 'forgot-password'
     if (!token && !onLogin) router.replace('/login')
     if (token && onLogin) router.replace('/')
   }, [hydrated, token, segments])
@@ -68,6 +70,7 @@ export default function RootLayout() {
   const locked = useScreenLock((s) => s.locked)
 
   useEffect(() => { void restoreLock() }, [])
+  useEffect(() => { void useReminder.getState().restore() }, [])
   useEffect(() => startOfflineQueueWatcher(), [])
 
   // Relock only after being away long enough -- a notification-shade pull or a permission
@@ -102,6 +105,7 @@ export default function RootLayout() {
             own "light" override locally since it's the one dark-wash screen. Leaving this as
             "light" globally made the status bar unreadable everywhere else. */}
         <StatusBar style="dark" />
+        <UpdateGate>
         <AuthGate>
           <Stack
             screenOptions={{
@@ -113,6 +117,7 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="login" />
+            <Stack.Screen name="forgot-password" options={{ headerShown: true, title: 'Forgot password' }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="orders" options={{ headerShown: true, title: 'Web orders' }} />
             <Stack.Screen name="pricing" options={{ headerShown: true, title: 'Lens pricing' }} />
@@ -124,6 +129,7 @@ export default function RootLayout() {
             <Stack.Screen name="transfers/index" options={{ headerShown: true, title: 'Transfers' }} />
             <Stack.Screen name="transfers/new" options={{ headerShown: true, title: 'New transfer' }} />
             <Stack.Screen name="users/index" options={{ headerShown: true, title: 'Staff' }} />
+            <Stack.Screen name="users/[id]" options={{ headerShown: true, title: 'Staff member' }} />
             <Stack.Screen name="day-report" options={{ headerShown: true, title: 'Day report' }} />
             <Stack.Screen name="screen-lock" options={{ headerShown: true, title: 'Screen Lock' }} />
             <Stack.Screen name="store-pricing" options={{ headerShown: true, title: 'Store pricing' }} />
@@ -132,15 +138,22 @@ export default function RootLayout() {
             <Stack.Screen name="sales" options={{ headerShown: true, title: 'Sales' }} />
             <Stack.Screen name="transaction/[id]" options={{ headerShown: true, title: 'Receipt' }} />
             <Stack.Screen name="refund" options={{ headerShown: true, title: 'Refund' }} />
+            <Stack.Screen name="shops" options={{ headerShown: true, title: 'Shops' }} />
+            <Stack.Screen name="reorder" options={{ headerShown: true, title: 'Reorder suggestions' }} />
+            <Stack.Screen name="analytics" options={{ headerShown: true, title: 'Top products' }} />
+            <Stack.Screen name="app-releases" options={{ headerShown: true, title: 'App releases' }} />
+            <Stack.Screen name="reminder" options={{ headerShown: true, title: 'Day-close reminder' }} />
             <Stack.Screen
               name="store-picker"
               options={{ presentation: 'modal', headerShown: true, title: 'Choose a shop' }}
             />
+            <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', headerShown: false }} />
           </Stack>
         </AuthGate>
         {/* Over the navigator so a back gesture can't dismiss it -- shown only to a signed-in
             session, since it protects a live one rather than replacing the password. */}
         {locked && token ? <LockScreen /> : null}
+        </UpdateGate>
       </SafeAreaProvider>
     </QueryClientProvider>
   )

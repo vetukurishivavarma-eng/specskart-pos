@@ -15,6 +15,11 @@
         "backgroundColor": "#f6f3ee"
       }
     },
-    "plugins": ["expo-router", "expo-secure-store"]
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      ["expo-camera", { "cameraPermission": "Specskart POS uses the camera to scan product barcodes." }]
+    ]
   }
 }

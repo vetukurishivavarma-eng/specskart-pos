@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar'
 import { Platform } from 'react-native'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { api, apiError } from '../src/lib/api'
 import { useAuth } from '../src/lib/auth'
@@ -12,6 +13,7 @@ import { Button, Icon } from '../src/ui/components'
 import { Logo } from '../src/ui/Logo'
 
 export default function Login() {
+  const router = useRouter()
   const login = useAuth((s) => s.login)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -118,6 +120,9 @@ export default function Login() {
               )}
 
               <Button label="Sign In" size="lg" onPress={submit} loading={busy} style={{ marginTop: spacing.lg }} />
+              <Pressable onPress={() => router.push('/forgot-password')} hitSlop={10} style={{ marginTop: spacing.md, alignSelf: 'center' }}>
+                <Text style={styles.forgotLink}>Forgot password?</Text>
+              </Pressable>
             </View>
 
             <Text style={styles.footnote}>Specskart</Text>
@@ -165,5 +170,6 @@ const styles = StyleSheet.create({
     padding: spacing.md, borderRadius: radius.md, marginTop: spacing.lg,
   },
   errorText: { flex: 1, fontFamily: font.medium, fontSize: 13, color: colors.danger },
+  forgotLink: { fontFamily: font.semibold, fontSize: 13, color: colors.primary },
   footnote: { fontFamily: font.medium, fontSize: 12, color: colors.onDarkMuted, textAlign: 'center', marginTop: spacing.xl },
 })

@@ -137,3 +137,5 @@ export type ReorderLine = {
 export type StaffDetail = { id: string; name: string; email: string; role: string; active: boolean }
 
 export type VersionInfo = { version: string; buildNumber: number; minimumBuild: number; downloadUrl: string; notes: string; mandatory: boolean }
+
+export type StoreView = { id: string; name: string; code: string; city: string; active: boolean }

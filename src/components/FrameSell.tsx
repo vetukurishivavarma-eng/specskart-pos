@@ -1,16 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as Crypto from 'expo-crypto'
-import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
-import { Text, TextInput, View } from 'react-native'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { api, apiError } from '../lib/api'
 import { useActiveStore } from '../lib/activeStore'
 import { useAuth } from '../lib/auth'
 import { enqueueSale, isNetworkError } from '../lib/offlineQueue'
 import { CartLine, FrameProduct, PosSaleView } from '../lib/pos'
 import { printSaleReceipt } from '../lib/receipt'
+import { useScanCapture } from '../lib/scanCapture'
 import { colors, font, formatKwacha, radius, spacing } from '../theme'
-import { Badge, Button, Card, EmptyState, Field, ListRow, Loading, QtyStepper, Select, StatRow } from '../ui/components'
+import { Badge, Button, Card, EmptyState, Field, Icon, ListRow, Loading, QtyStepper, Select, StatRow } from '../ui/components'
 
 const PAYMENT_METHODS = [
   { value: 'CASH', label: 'Cash' },
@@ -34,6 +35,11 @@ export default function FrameSell() {
   const [error, setError] = useState<string | null>(null)
   const [lastSale, setLastSale] = useState<PosSaleView | null>(null)
   const [queuedOffline, setQueuedOffline] = useState(false)
+
+  useFocusEffect(useCallback(() => {
+    const code = useScanCapture.getState().consume()
+    if (code) setQuery(code)
+  }, []))
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['catalog-products'],
@@ -137,6 +143,9 @@ export default function FrameSell() {
           value={query}
           onChangeText={setQuery}
         />
+        <Pressable onPress={() => router.push('/scan')} hitSlop={8}>
+          <Icon name="camera" size={18} color={colors.textFaint} />
+        </Pressable>
       </View>
 
       {isLoading ? (

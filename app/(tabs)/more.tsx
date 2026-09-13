@@ -47,6 +47,10 @@ export default function More() {
           <ListRow icon="activity" title="Stock movements" subtitle="Audit trail" onPress={() => router.push('/movements')} />
           <RowDivider />
           <ListRow icon="upload" title="Bulk stock upload" subtitle="Paste in counts from a stock-take" onPress={() => router.push('/stock-import')} />
+          <RowDivider />
+          <ListRow icon="alert-triangle" title="Reorder suggestions" onPress={() => router.push('/reorder')} />
+          <RowDivider />
+          <ListRow icon="trending-up" title="Top products" subtitle="Revenue, profit & quantity" onPress={() => router.push('/analytics')} />
         </Card>
       </View>
 
@@ -58,10 +62,16 @@ export default function More() {
           <ListRow icon="smartphone" title="My devices" onPress={() => router.push('/devices')} />
           <RowDivider />
           <ListRow icon="lock" title="Screen lock" onPress={() => router.push('/screen-lock')} />
+          <RowDivider />
+          <ListRow icon="bell" title="Day-close reminder" onPress={() => router.push('/reminder')} />
           {user?.role === 'ADMIN' && (
             <>
               <RowDivider />
               <ListRow icon="users" title="Staff" onPress={() => router.push('/users')} />
+              <RowDivider />
+              <ListRow icon="home" title="Shops" subtitle="Add & manage locations" onPress={() => router.push('/shops')} />
+              <RowDivider />
+              <ListRow icon="download" title="App releases" subtitle="Publish an update, force older builds off" onPress={() => router.push('/app-releases')} />
             </>
           )}
         </Card>

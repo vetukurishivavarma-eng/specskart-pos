@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { FlatList, Text, View } from 'react-native'
 import { api } from '../../src/lib/api'
@@ -14,6 +15,7 @@ const ROLES = [
 
 export default function Staff() {
   const currentUser = useAuth((s) => s.user)
+  const router = useRouter()
   const qc = useQueryClient()
   const [adding, setAdding] = useState(false)
   const [email, setEmail] = useState('')
@@ -77,6 +79,7 @@ export default function Staff() {
           icon="user"
           title={item.name || item.email}
           subtitle={`${item.email} · ${item.role}`}
+          onPress={() => router.push(`/users/${item.id}`)}
           trailing={
             <Toggle label="" value={item.active} onChange={() => toggleActive(item)} />
           }
