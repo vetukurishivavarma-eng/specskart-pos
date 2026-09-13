@@ -29,6 +29,12 @@ at a local backend during development, add to `app.json`:
 { "expo": { "extra": { "apiBaseUrl": "http://<your-lan-ip>:8080/api" } } }
 ```
 
+## Versioning
+
+Independent of NG POS's version numbering — separate repo, separate `app.json`/`package.json`,
+starts at `1.0.0` / `versionCode 1`. Bump both on every release the way NG POS does, but never
+copy or sync NG POS's version numbers here — they track unrelated release histories.
+
 ## Not yet built / known gaps
 
 - Not device-tested — built and typechecked against the same stack NG POS mobile uses
