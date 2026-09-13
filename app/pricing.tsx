@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
-import { api } from '../../src/lib/api'
-import { PricingOption } from '../../src/lib/lens'
-import { colors, font, formatKwacha, radius, spacing } from '../../src/theme'
-import { Button, Card, Loading, RowDivider, Title, Toggle } from '../../src/ui/components'
+import { api } from '../src/lib/api'
+import { PricingOption } from '../src/lib/lens'
+import { colors, font, formatKwacha, radius, spacing } from '../src/theme'
+import { Button, Card, Loading, RowDivider, Title, Toggle } from '../src/ui/components'
 
 export default function Pricing() {
   const qc = useQueryClient()

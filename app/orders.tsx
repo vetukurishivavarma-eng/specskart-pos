@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
-import { api, apiError } from '../../src/lib/api'
-import { useAuth } from '../../src/lib/auth'
-import { SaleView } from '../../src/lib/lens'
-import { colors, font, formatKwacha, spacing } from '../../src/theme'
-import { Badge, Button, Card, EmptyState, Loading, Select, Title } from '../../src/ui/components'
+import { api, apiError } from '../src/lib/api'
+import { useAuth } from '../src/lib/auth'
+import { SaleView } from '../src/lib/lens'
+import { colors, font, formatKwacha, spacing } from '../src/theme'
+import { Badge, Button, Card, EmptyState, Loading, Select, Title } from '../src/ui/components'
 
 const PAYMENT_METHODS = [
   { value: '', label: 'Pick payment' },

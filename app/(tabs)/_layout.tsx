@@ -31,9 +31,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Sell', tabBarIcon: tabIcon('shopping-bag') }} />
-      <Tabs.Screen name="orders" options={{ title: 'Web orders', tabBarIcon: tabIcon('inbox') }} />
-      <Tabs.Screen name="pricing" options={{ title: 'Pricing', tabBarIcon: tabIcon('tag') }} />
+      <Tabs.Screen name="stock" options={{ title: 'Stock', tabBarIcon: tabIcon('package') }} />
       <Tabs.Screen name="reports" options={{ title: 'Sales', tabBarIcon: tabIcon('bar-chart-2') }} />
+      <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: tabIcon('menu') }} />
     </Tabs>
   )
 }

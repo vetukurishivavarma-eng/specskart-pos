@@ -14,6 +14,7 @@ import { View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors } from '../src/theme'
 import { Loading } from '../src/ui/components'
+import { useActiveStore } from '../src/lib/activeStore'
 import { useAuth } from '../src/lib/auth'
 
 // Shop staff work on patchy connections; don't hammer a dying link, and refresh
@@ -26,10 +27,12 @@ const queryClient = new QueryClient({
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { token, hydrated, hydrate } = useAuth()
+  const storeHydrated = useActiveStore((s) => s.hydrated)
+  const hydrateStore = useActiveStore((s) => s.hydrate)
   const segments = useSegments()
   const router = useRouter()
 
-  useEffect(() => { hydrate() }, [])
+  useEffect(() => { hydrate(); hydrateStore() }, [])
 
   useEffect(() => {
     if (!hydrated) return
@@ -38,7 +41,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (token && onLogin) router.replace('/')
   }, [hydrated, token, segments])
 
-  if (!hydrated) {
+  if (!hydrated || !storeHydrated) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.canvas, justifyContent: 'center' }}>
         <Loading />
@@ -73,6 +76,13 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
             <Stack.Screen name="login" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="orders" options={{ headerShown: true, title: 'Web orders' }} />
+            <Stack.Screen name="pricing" options={{ headerShown: true, title: 'Lens pricing' }} />
+            <Stack.Screen name="devices" options={{ headerShown: true, title: 'My devices' }} />
+            <Stack.Screen
+              name="store-picker"
+              options={{ presentation: 'modal', headerShown: true, title: 'Choose a shop' }}
+            />
           </Stack>
         </AuthGate>
       </SafeAreaProvider>

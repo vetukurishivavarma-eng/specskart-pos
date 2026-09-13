@@ -1,8 +1,11 @@
+import Constants from 'expo-constants'
+import { Platform } from 'react-native'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { api, apiError } from '../src/lib/api'
 import { useAuth } from '../src/lib/auth'
+import { deviceName, getDeviceId } from '../src/lib/device'
 import { bevel, colors, font, radius, shadow, spacing } from '../src/theme'
 import { Button, Icon } from '../src/ui/components'
 
@@ -23,7 +26,15 @@ export default function Login() {
     setBusy(true)
     setError(null)
     try {
-      const { data } = await api.post('/auth/login', { email: email.trim(), password })
+      const deviceId = await getDeviceId()
+      const { data } = await api.post('/auth/login', {
+        email: email.trim(),
+        password,
+        deviceId,
+        deviceName: deviceName(),
+        platform: Platform.OS,
+        appVersion: Constants.expoConfig?.version ?? null,
+      })
       await login(data.token, { email: data.email, name: data.fullName, role: data.role })
     } catch (e) {
       setError(apiError(e))
