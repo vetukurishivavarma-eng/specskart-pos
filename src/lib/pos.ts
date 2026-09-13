@@ -111,3 +111,29 @@ export type DayReportView = {
   mobileTotalMinor: number
   topItems: TopItem[]
 }
+
+export type MovementView = {
+  productId: string
+  productName: string
+  type: string
+  quantity: number
+  balance: number
+  reference: string | null
+  note: string | null
+  createdAt: string
+}
+
+export type ProductRank = { productId: string; productName: string; revenueMinor: number; profitMinor: number; quantity: number }
+
+export type ReorderLine = {
+  productId: string
+  productName: string
+  sku: string
+  quantity: number
+  reorderLevel: number
+  suggestedQuantity: number
+}
+
+export type StaffDetail = { id: string; name: string; email: string; role: string; active: boolean }
+
+export type VersionInfo = { version: string; buildNumber: number; minimumBuild: number; downloadUrl: string; notes: string; mandatory: boolean }

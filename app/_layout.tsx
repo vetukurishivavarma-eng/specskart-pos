@@ -126,6 +126,12 @@ export default function RootLayout() {
             <Stack.Screen name="users/index" options={{ headerShown: true, title: 'Staff' }} />
             <Stack.Screen name="day-report" options={{ headerShown: true, title: 'Day report' }} />
             <Stack.Screen name="screen-lock" options={{ headerShown: true, title: 'Screen Lock' }} />
+            <Stack.Screen name="store-pricing" options={{ headerShown: true, title: 'Store pricing' }} />
+            <Stack.Screen name="movements" options={{ headerShown: true, title: 'Stock movements' }} />
+            <Stack.Screen name="stock-import" options={{ headerShown: true, title: 'Bulk stock upload' }} />
+            <Stack.Screen name="sales" options={{ headerShown: true, title: 'Sales' }} />
+            <Stack.Screen name="transaction/[id]" options={{ headerShown: true, title: 'Receipt' }} />
+            <Stack.Screen name="refund" options={{ headerShown: true, title: 'Refund' }} />
             <Stack.Screen
               name="store-picker"
               options={{ presentation: 'modal', headerShown: true, title: 'Choose a shop' }}

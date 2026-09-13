@@ -38,6 +38,19 @@ export default function More() {
       </View>
 
       <View>
+        <SectionLabel>Sales & stock</SectionLabel>
+        <Card>
+          <ListRow icon="list" title="Sales history" onPress={() => router.push('/sales')} />
+          <RowDivider />
+          <ListRow icon="tag" title="Store pricing" subtitle="Per-shop price overrides" onPress={() => router.push('/store-pricing')} />
+          <RowDivider />
+          <ListRow icon="activity" title="Stock movements" subtitle="Audit trail" onPress={() => router.push('/movements')} />
+          <RowDivider />
+          <ListRow icon="upload" title="Bulk stock upload" subtitle="Paste in counts from a stock-take" onPress={() => router.push('/stock-import')} />
+        </Card>
+      </View>
+
+      <View>
         <SectionLabel>Account</SectionLabel>
         <Card>
           <ListRow icon="home" title="Switch shop" subtitle={store?.name ?? 'Pick a shop'} onPress={() => router.push('/store-picker')} />
