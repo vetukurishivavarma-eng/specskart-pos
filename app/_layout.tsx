@@ -12,7 +12,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef } from 'react'
 import { AppState, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { colors } from '../src/theme'
+import { colors, font } from '../src/theme'
 import { Loading } from '../src/ui/components'
 import { LockScreen } from '../src/ui/LockScreen'
 import { useActiveStore } from '../src/lib/activeStore'
@@ -98,9 +98,20 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <StatusBar style="light" />
+        {/* Dark icons/clock for the light canvas every screen but login uses -- login sets its
+            own "light" override locally since it's the one dark-wash screen. Leaving this as
+            "light" globally made the status bar unreadable everywhere else. */}
+        <StatusBar style="dark" />
         <AuthGate>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.canvas },
+              headerStyle: { backgroundColor: colors.surface },
+              headerTitleStyle: { fontFamily: font.bold, color: colors.text },
+              headerTintColor: colors.text,
+            }}
+          >
             <Stack.Screen name="login" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="orders" options={{ headerShown: true, title: 'Web orders' }} />

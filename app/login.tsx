@@ -1,4 +1,5 @@
 import Constants from 'expo-constants'
+import { StatusBar } from 'expo-status-bar'
 import { Platform } from 'react-native'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -8,6 +9,7 @@ import { useAuth } from '../src/lib/auth'
 import { deviceName, getDeviceId } from '../src/lib/device'
 import { bevel, colors, font, radius, shadow, spacing } from '../src/theme'
 import { Button, Icon } from '../src/ui/components'
+import { Logo } from '../src/ui/Logo'
 
 export default function Login() {
   const login = useAuth((s) => s.login)
@@ -45,6 +47,10 @@ export default function Login() {
 
   return (
     <View style={styles.root}>
+      {/* This is the one dark-wash screen in the app -- every other screen wants dark status
+          bar icons (see app/_layout.tsx), this one wants light. Whichever screen is focused
+          wins, so this local override only applies here. */}
+      <StatusBar style="light" />
       {/* Layered wash: keeps the ink from reading as a flat block. */}
       <View style={styles.washTop} />
       <View style={styles.washGlow} />
@@ -54,7 +60,7 @@ export default function Login() {
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.brand}>
               <View style={styles.mark}>
-                <Text style={styles.markText}>S</Text>
+                <Logo size={56} color={colors.accent} />
               </View>
               <Text style={styles.wordmark}>Specskart POS</Text>
               <Text style={styles.tagline}>Lens pricing &amp; counter sales</Text>
@@ -136,7 +142,6 @@ const styles = StyleSheet.create({
     width: 96, height: 96, borderRadius: radius.xl, backgroundColor: colors.brandCard,
     alignItems: 'center', justifyContent: 'center', ...shadow.raised, ...bevel.light,
   },
-  markText: { fontFamily: font.extrabold, fontSize: 40, color: colors.accent },
   wordmark: { fontFamily: font.extrabold, fontSize: 26, color: colors.onDark, marginTop: spacing.md, letterSpacing: -0.6 },
   tagline: {
     fontFamily: font.medium, fontSize: 12, color: colors.onDarkMuted, letterSpacing: 1.8,
