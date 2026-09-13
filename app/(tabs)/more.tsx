@@ -25,6 +25,13 @@ export default function More() {
       </View>
 
       <View>
+        <SectionLabel>Products</SectionLabel>
+        <Card>
+          <ListRow icon="package" title="Products" subtitle="Edit SKU, barcode, price, cost & stock" onPress={() => router.push('/products')} />
+        </Card>
+      </View>
+
+      <View>
         <SectionLabel>Frame business</SectionLabel>
         <Card>
           <ListRow icon="truck" title="Suppliers" onPress={() => router.push('/suppliers')} />
@@ -34,6 +41,12 @@ export default function More() {
           <ListRow icon="repeat" title="Transfers" subtitle="Move stock between shops" onPress={() => router.push('/transfers')} />
           <RowDivider />
           <ListRow icon="bar-chart-2" title="Day report" subtitle="Today's Z-report" onPress={() => router.push('/day-report')} />
+          {user?.role === 'ADMIN' && (
+            <>
+              <RowDivider />
+              <ListRow icon="bar-chart-2" title="Day report by shop" subtitle="Any shop, not just this one" onPress={() => router.push('/shop-day-report')} />
+            </>
+          )}
         </Card>
       </View>
 
@@ -64,6 +77,8 @@ export default function More() {
           <ListRow icon="lock" title="Screen lock" onPress={() => router.push('/screen-lock')} />
           <RowDivider />
           <ListRow icon="bell" title="Day-close reminder" onPress={() => router.push('/reminder')} />
+          <RowDivider />
+          <ListRow icon="printer" title="Printing" onPress={() => router.push('/printer')} />
           {user?.role === 'ADMIN' && (
             <>
               <RowDivider />

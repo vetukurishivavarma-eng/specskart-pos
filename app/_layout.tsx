@@ -143,6 +143,10 @@ export default function RootLayout() {
             <Stack.Screen name="analytics" options={{ headerShown: true, title: 'Top products' }} />
             <Stack.Screen name="app-releases" options={{ headerShown: true, title: 'App releases' }} />
             <Stack.Screen name="reminder" options={{ headerShown: true, title: 'Day-close reminder' }} />
+            <Stack.Screen name="products/index" options={{ headerShown: true, title: 'Products' }} />
+            <Stack.Screen name="products/[id]" options={{ headerShown: true, title: 'Product' }} />
+            <Stack.Screen name="shop-day-report" options={{ headerShown: true, title: 'Day report by shop' }} />
+            <Stack.Screen name="printer" options={{ headerShown: true, title: 'Printing' }} />
             <Stack.Screen
               name="store-picker"
               options={{ presentation: 'modal', headerShown: true, title: 'Choose a shop' }}
