@@ -98,7 +98,7 @@ export type TransferView = {
   createdAt: string
 }
 
-export type StaffMember = { id: string; name: string; email: string; role: string; active: boolean }
+export type StaffMember = { id: string; name: string; email: string; role: string; active: boolean; storeId: string | null }
 
 export type TopItem = { name: string; quantity: number; totalMinor: number }
 export type DayReportView = {
@@ -134,7 +134,7 @@ export type ReorderLine = {
   suggestedQuantity: number
 }
 
-export type StaffDetail = { id: string; name: string; email: string; role: string; active: boolean }
+export type StaffDetail = { id: string; name: string; email: string; role: string; active: boolean; storeId: string | null }
 
 export type VersionInfo = { version: string; buildNumber: number; minimumBuild: number; downloadUrl: string; notes: string; mandatory: boolean }
 

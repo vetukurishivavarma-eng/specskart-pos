@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import { create } from 'zustand'
 
-export type SessionUser = { email: string; name: string; role: string }
+export type SessionUser = { email: string; name: string; role: string; storeId: string | null; storeName: string | null }
 
 type AuthState = {
   token: string | null

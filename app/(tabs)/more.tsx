@@ -70,8 +70,12 @@ export default function More() {
       <View>
         <SectionLabel>Account</SectionLabel>
         <Card>
-          <ListRow icon="home" title="Switch shop" subtitle={store?.name ?? 'Pick a shop'} onPress={() => router.push('/store-picker')} />
-          <RowDivider />
+          {!user?.storeId && (
+            <>
+              <ListRow icon="home" title="Switch shop" subtitle={store?.name ?? 'Pick a shop'} onPress={() => router.push('/store-picker')} />
+              <RowDivider />
+            </>
+          )}
           <ListRow icon="smartphone" title="My devices" onPress={() => router.push('/devices')} />
           <RowDivider />
           <ListRow icon="lock" title="Screen lock" onPress={() => router.push('/screen-lock')} />
@@ -87,6 +91,8 @@ export default function More() {
               <ListRow icon="home" title="Shops" subtitle="Add & manage locations" onPress={() => router.push('/shops')} />
               <RowDivider />
               <ListRow icon="download" title="App releases" subtitle="Publish an update, force older builds off" onPress={() => router.push('/app-releases')} />
+              <RowDivider />
+              <ListRow icon="clock" title="History" subtitle="Who changed what, across every shop" onPress={() => router.push('/history')} />
             </>
           )}
         </Card>

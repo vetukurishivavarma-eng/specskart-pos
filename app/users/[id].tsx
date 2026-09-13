@@ -2,9 +2,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { FlatList, Text, View } from 'react-native'
 import { api } from '../../src/lib/api'
-import { DeviceView, StaffDetail } from '../../src/lib/pos'
+import { DeviceView, StaffDetail, StoreView } from '../../src/lib/pos'
 import { colors, font, spacing } from '../../src/theme'
-import { Badge, Button, Card, EmptyState, Loading, Subtitle, Title, Toggle } from '../../src/ui/components'
+import { Badge, Button, Card, EmptyState, Loading, Select, Subtitle, Title, Toggle } from '../../src/ui/components'
 
 export default function StaffDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -17,6 +17,10 @@ export default function StaffDetailScreen() {
   const { data: devices, isLoading: devicesLoading } = useQuery({
     queryKey: ['staff-devices', id],
     queryFn: async () => (await api.get<DeviceView[]>(`/admin/pos/devices/user/${id}`)).data,
+  })
+  const { data: stores } = useQuery({
+    queryKey: ['pos-stores-admin'],
+    queryFn: async () => (await api.get<StoreView[]>('/admin/pos/stores')).data,
   })
 
   if (staffLoading || !staff) return <Loading />
@@ -35,6 +39,18 @@ export default function StaffDetailScreen() {
             value={staff.active}
             onChange={async (active) => {
               await api.patch(`/admin/users/${id}`, { active })
+              qc.invalidateQueries({ queryKey: ['staff-detail', id] })
+              qc.invalidateQueries({ queryKey: ['staff'] })
+            }}
+          />
+          {/* Can move a login to a different shop, but not clear it back to unscoped from
+              here -- see AdminUserController.UpdateUser. Delete + re-create for that. */}
+          <Select
+            label="Shop"
+            value={staff.storeId ?? ''}
+            options={(stores ?? []).map((s) => ({ value: s.id, label: s.name }))}
+            onChange={async (storeId) => {
+              await api.patch(`/admin/users/${id}`, { storeId })
               qc.invalidateQueries({ queryKey: ['staff-detail', id] })
               qc.invalidateQueries({ queryKey: ['staff'] })
             }}

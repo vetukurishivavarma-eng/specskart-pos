@@ -6,6 +6,7 @@ import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInpu
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { api, apiError } from '../src/lib/api'
+import { useActiveStore } from '../src/lib/activeStore'
 import { useAuth } from '../src/lib/auth'
 import { deviceName, getDeviceId } from '../src/lib/device'
 import { bevel, colors, font, radius, shadow, spacing } from '../src/theme'
@@ -39,7 +40,18 @@ export default function Login() {
         platform: Platform.OS,
         appVersion: Constants.expoConfig?.version ?? null,
       })
-      await login(data.token, { email: data.email, name: data.fullName, role: data.role })
+      await login(data.token, {
+        email: data.email, name: data.fullName, role: data.role,
+        storeId: data.storeId ?? null, storeName: data.storeName ?? null,
+      })
+      // A shop-scoped login only ever has one shop -- lock straight to it instead of
+      // making them pick it, same as its own backend endpoints already enforce.
+      if (data.storeId) {
+        try {
+          const store = await api.get(`/admin/pos/stores/${data.storeId}`)
+          await useActiveStore.getState().select(store.data)
+        } catch { /* non-fatal -- they can still pick it manually */ }
+      }
     } catch (e) {
       setError(apiError(e))
     } finally {

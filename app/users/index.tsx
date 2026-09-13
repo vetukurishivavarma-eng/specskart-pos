@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { FlatList, Text, View } from 'react-native'
 import { api } from '../../src/lib/api'
 import { useAuth } from '../../src/lib/auth'
-import { StaffMember } from '../../src/lib/pos'
+import { StaffMember, StoreView } from '../../src/lib/pos'
 import { colors, font, spacing } from '../../src/theme'
 import { Button, Card, Field, ListRow, Loading, RowDivider, Select, Title, Toggle } from '../../src/ui/components'
 
@@ -22,11 +22,17 @@ export default function Staff() {
   const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('AGENT')
+  const [storeId, setStoreId] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => (await api.get<StaffMember[]>('/admin/users', { params: { includeInactive: true } })).data,
   })
+  const { data: stores } = useQuery({
+    queryKey: ['pos-stores-admin'],
+    queryFn: async () => (await api.get<StoreView[]>('/admin/pos/stores')).data,
+  })
+  const storeName = (id: string | null) => stores?.find((s) => s.id === id)?.name
 
   if (currentUser?.role !== 'ADMIN') {
     return (
@@ -40,8 +46,11 @@ export default function Staff() {
 
   async function addStaff() {
     if (!email.trim() || !password) return
-    await api.post('/admin/users', { email: email.trim(), fullName: fullName.trim(), password, role })
-    setEmail(''); setFullName(''); setPassword(''); setRole('AGENT'); setAdding(false)
+    await api.post('/admin/users', {
+      email: email.trim(), fullName: fullName.trim(), password, role,
+      storeId: storeId || null,
+    })
+    setEmail(''); setFullName(''); setPassword(''); setRole('AGENT'); setStoreId(''); setAdding(false)
     qc.invalidateQueries({ queryKey: ['staff'] })
   }
 
@@ -67,6 +76,12 @@ export default function Staff() {
               <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
               <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
               <Select label="Role" value={role} options={ROLES as any} onChange={setRole} />
+              <Select
+                label="Shop (leave unpicked for admin/unscoped)"
+                value={storeId}
+                options={[{ value: '', label: 'Unscoped (sees every shop)' }, ...(stores ?? []).map((s) => ({ value: s.id, label: s.name }))]}
+                onChange={setStoreId}
+              />
               <Button label="Create account" onPress={addStaff} disabled={!email.trim() || !password} />
             </Card>
           ) : (
@@ -78,7 +93,7 @@ export default function Staff() {
         <ListRow
           icon="user"
           title={item.name || item.email}
-          subtitle={`${item.email} · ${item.role}`}
+          subtitle={`${item.email} · ${item.role} · ${storeName(item.storeId) ?? 'Unscoped'}`}
           onPress={() => router.push(`/users/${item.id}`)}
           trailing={
             <Toggle label="" value={item.active} onChange={() => toggleActive(item)} />

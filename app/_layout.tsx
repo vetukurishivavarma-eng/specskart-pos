@@ -147,6 +147,7 @@ export default function RootLayout() {
             <Stack.Screen name="products/[id]" options={{ headerShown: true, title: 'Product' }} />
             <Stack.Screen name="shop-day-report" options={{ headerShown: true, title: 'Day report by shop' }} />
             <Stack.Screen name="printer" options={{ headerShown: true, title: 'Printing' }} />
+            <Stack.Screen name="history" options={{ headerShown: true, title: 'History' }} />
             <Stack.Screen
               name="store-picker"
               options={{ presentation: 'modal', headerShown: true, title: 'Choose a shop' }}
