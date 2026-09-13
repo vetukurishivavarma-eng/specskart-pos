@@ -1,11 +1,28 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useFonts } from 'expo-font'
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans'
 import { Stack, useRouter, useSegments } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
-import { ActivityIndicator, View } from 'react-native'
+import { View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { colors } from '../src/theme'
+import { Loading } from '../src/ui/components'
 import { useAuth } from '../src/lib/auth'
 
-const queryClient = new QueryClient()
+// Shop staff work on patchy connections; don't hammer a dying link, and refresh
+// on regaining focus/reconnect since prices and orders are shared across devices.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: true, refetchOnReconnect: true },
+  },
+})
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { token, hydrated, hydrate } = useAuth()
@@ -23,8 +40,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!hydrated) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, backgroundColor: colors.canvas, justifyContent: 'center' }}>
+        <Loading />
       </View>
     )
   }
@@ -32,17 +49,30 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Jakarta_400Regular: PlusJakartaSans_400Regular,
+    Jakarta_500Medium: PlusJakartaSans_500Medium,
+    Jakarta_600SemiBold: PlusJakartaSans_600SemiBold,
+    Jakarta_700Bold: PlusJakartaSans_700Bold,
+    Jakarta_800ExtraBold: PlusJakartaSans_800ExtraBold,
+  })
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.canvas, justifyContent: 'center' }}>
+        <Loading />
+      </View>
+    )
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
+        <StatusBar style="light" />
         <AuthGate>
-          <Stack screenOptions={{ headerTitleStyle: { fontWeight: '600' } }}>
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="index" options={{ title: 'Specskart POS' }} />
-            <Stack.Screen name="pricing" options={{ title: 'Lens pricing' }} />
-            <Stack.Screen name="pending" options={{ title: 'Web orders' }} />
-            <Stack.Screen name="new-sale" options={{ title: 'New sale' }} />
-            <Stack.Screen name="sales" options={{ title: "Today's sales" }} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="(tabs)" />
           </Stack>
         </AuthGate>
       </SafeAreaProvider>

@@ -5,15 +5,20 @@ database — it authenticates and calls the same `specskart-api` service the web
 (`POST /api/auth/login`, same admin/agent accounts, `/api/admin/lens-pricing` and
 `/api/admin/lens-sales/*`).
 
-- **Lens pricing** — edit the price and in-stock flag for each lens option (Clear,
-  Photochromatic, blue-block, bifocal, progressive). Feeds the online lens configurator's
-  quote directly — no redeploy needed to change a price.
+**Same structure and generic UI kit as NG POS mobile** (`src/theme.ts` design tokens,
+`src/ui/components.tsx` — Button/Card/Field/Select/Toggle/ListRow/Badge/etc. — ported
+verbatim since those are client-agnostic, and the login-screen/tab-navigation layout
+mirrors NG POS's), recoloured to Specskart's own ink/bone/clay/moss identity instead of
+NG POS's client-specific palette. Bottom-tab navigation, 4 tabs:
+
+- **Sell** — bill a walk-in counter customer directly, no WhatsApp verification (staff
+  vouches for them in person). Same pricing rules as the website.
 - **Web orders** — customers who verified over WhatsApp and finished the online form show
   up here; staff pick a payment method and mark the order sold when handing it over.
-- **New sale** — bill a walk-in counter customer directly, no WhatsApp verification (staff
-  vouches for them in person). Same pricing rules as the website.
-- **Today's sales** — everything sold today, web or walk-in, with a running total on the
-  home screen.
+- **Pricing** — edit the price and in-stock flag for each lens option (Clear,
+  Photochromatic, blue-block, bifocal, progressive). Feeds the online lens configurator's
+  quote directly — no redeploy needed to change a price.
+- **Sales** — today's running total + every sale (web or walk-in) sold today.
 
 ## Setup
 
@@ -37,8 +42,8 @@ copy or sync NG POS's version numbers here — they track unrelated release hist
 
 ## Not yet built / known gaps
 
-- Not device-tested — built and typechecked against the same stack NG POS mobile uses
-  (Expo 57, RN 0.86), but never run on a phone yet.
+- Not device-tested with this UI rework — the pre-rework build did produce a working
+  signed APK via CI, but this restyle hasn't been reinstalled on a phone yet.
 - No offline queue — a sale made with no signal will just fail; NG POS's offline-first
   sync pattern wasn't ported over since this app is far smaller in scope.
 - No multi-shop — `shopName` is a free-text field on the sale, not a real Store model;
@@ -46,3 +51,8 @@ copy or sync NG POS's version numbers here — they track unrelated release hist
 - Walk-in sales don't capture a prescription (Sph/Cyl/Axis) — only lens type/blue-block/
   add-on — so `specialAxis` is never true for a walk-in. Add an Rx step if the counter
   needs to check that too.
+- Deliberately NOT ported from NG POS's login: remembered-accounts pick-a-name flow and
+  "Forgot password?" — both need either local-only storage decisions or backend endpoints
+  this app doesn't have yet. Single email/password form only, for now.
+- No printer, screen lock, offline sync, or in-app update-gate — all NG POS features tied
+  to a till/warehouse operation that doesn't apply to a lens price list + counter sales.

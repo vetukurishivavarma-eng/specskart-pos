@@ -16,7 +16,3 @@ export type SaleView = {
   walkIn: boolean
   createdAt: string
 }
-
-export function money(minor: number, currency = 'ZMW') {
-  return `${currency === 'ZMW' ? 'K' : currency}${(minor / 100).toFixed(2)}`
-}
