@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Specskart POS",
+    "slug": "specskart-pos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "specskartpos",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.specskart.pos",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a1a"
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}
