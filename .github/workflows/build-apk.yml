@@ -1,0 +1,55 @@
+name: Build release APK
+
+# Manual trigger, plus every push to main so a merge always has a downloadable build to
+# sanity-check. Actual publishing (GitHub Release, handing the file to staff) stays manual --
+# same as NG POS mobile.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+
+      - name: Prebuild native android project
+        run: npx expo prebuild --platform android
+        env:
+          CI: 1
+
+      - name: Patch in release signing config
+        run: node scripts/apply-release-signing.js
+
+      - name: Write keystore + signing properties
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+          cat >> android/gradle.properties <<EOF
+          MYAPP_RELEASE_STORE_FILE=release.keystore
+          MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          MYAPP_RELEASE_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
+          MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: specskart-pos-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
