@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // `expo prebuild` regenerates android/app/build.gradle from scratch every run (it's
 // gitignored, not committed) with only a debug signingConfig. This patches in a release
-// one that reads from android/gradle.properties -- see .github/workflows/build-apk.yml,
-// which writes those properties from repo secrets before running gradlew.
+// one that reads from environment variables (System.getenv, not gradle.properties --
+// root gradle.properties values didn't resolve as Project properties on the :app
+// subproject on this Gradle version, so env vars are the direct, unambiguous option).
+// See .github/workflows/build-apk.yml, which sets those env vars from repo secrets on
+// the gradlew step.
 //
 // ponytail: string-patches Expo's generated template rather than a config plugin. Simpler,
 // but fragile if a future Expo SDK changes this exact template -- if `expo prebuild` starts
@@ -31,10 +34,10 @@ const withRelease = `    signingConfigs {
             keyPassword 'android'
         }
         release {
-            storeFile file(project.property('MYAPP_RELEASE_STORE_FILE'))
-            storePassword project.property('MYAPP_RELEASE_STORE_PASSWORD')
-            keyAlias project.property('MYAPP_RELEASE_KEY_ALIAS')
-            keyPassword project.property('MYAPP_RELEASE_KEY_PASSWORD')
+            storeFile file(System.getenv('MYAPP_RELEASE_STORE_FILE'))
+            storePassword System.getenv('MYAPP_RELEASE_STORE_PASSWORD')
+            keyAlias System.getenv('MYAPP_RELEASE_KEY_ALIAS')
+            keyPassword System.getenv('MYAPP_RELEASE_KEY_PASSWORD')
         }
     }`;
 
