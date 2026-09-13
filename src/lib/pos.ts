@@ -54,3 +54,60 @@ export type DeviceView = {
 }
 
 export type CartLine = { product: FrameProduct; quantity: number }
+
+export type SupplierView = {
+  id: string
+  name: string
+  contactName: string
+  phone: string
+  email: string
+  address: string
+  notes: string
+  active: boolean
+}
+
+export type InvoiceItemView = { productId: string | null; productName: string; sku: string; quantity: number; unitCostMinor: number; lineTotalMinor: number }
+export type InvoicePaymentView = { amountMinor: number; method: string; reference: string | null; paidAt: string }
+export type InvoiceView = {
+  id: string
+  supplierId: string
+  supplierName: string
+  storeId: string
+  invoiceNumber: string
+  invoiceDate: string
+  dueDate: string | null
+  subtotalMinor: number
+  otherChargesMinor: number
+  totalMinor: number
+  amountPaidMinor: number
+  balanceMinor: number
+  status: string
+  items: InvoiceItemView[]
+  payments: InvoicePaymentView[]
+}
+
+export type TransferItemView = { productId: string; productName: string; quantity: number }
+export type TransferView = {
+  id: string
+  reference: string
+  fromStoreId: string | null
+  toStoreId: string | null
+  status: string
+  notes: string
+  items: TransferItemView[]
+  createdAt: string
+}
+
+export type StaffMember = { id: string; name: string; email: string; role: string; active: boolean }
+
+export type TopItem = { name: string; quantity: number; totalMinor: number }
+export type DayReportView = {
+  storeId: string
+  reportDate: string
+  saleCount: number
+  grossTotalMinor: number
+  cashTotalMinor: number
+  cardTotalMinor: number
+  mobileTotalMinor: number
+  topItems: TopItem[]
+}

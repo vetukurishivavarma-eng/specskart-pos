@@ -25,11 +25,32 @@ export default function More() {
       </View>
 
       <View>
+        <SectionLabel>Frame business</SectionLabel>
+        <Card>
+          <ListRow icon="truck" title="Suppliers" onPress={() => router.push('/suppliers')} />
+          <RowDivider />
+          <ListRow icon="file-text" title="Supplier invoices" subtitle="Deliveries & what's owed" onPress={() => router.push('/purchases')} />
+          <RowDivider />
+          <ListRow icon="repeat" title="Transfers" subtitle="Move stock between shops" onPress={() => router.push('/transfers')} />
+          <RowDivider />
+          <ListRow icon="bar-chart-2" title="Day report" subtitle="Today's Z-report" onPress={() => router.push('/day-report')} />
+        </Card>
+      </View>
+
+      <View>
         <SectionLabel>Account</SectionLabel>
         <Card>
           <ListRow icon="home" title="Switch shop" subtitle={store?.name ?? 'Pick a shop'} onPress={() => router.push('/store-picker')} />
           <RowDivider />
           <ListRow icon="smartphone" title="My devices" onPress={() => router.push('/devices')} />
+          <RowDivider />
+          <ListRow icon="lock" title="Screen lock" onPress={() => router.push('/screen-lock')} />
+          {user?.role === 'ADMIN' && (
+            <>
+              <RowDivider />
+              <ListRow icon="users" title="Staff" onPress={() => router.push('/users')} />
+            </>
+          )}
         </Card>
       </View>
 

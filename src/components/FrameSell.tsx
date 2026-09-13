@@ -6,9 +6,11 @@ import { Text, TextInput, View } from 'react-native'
 import { api, apiError } from '../lib/api'
 import { useActiveStore } from '../lib/activeStore'
 import { useAuth } from '../lib/auth'
-import { CartLine, FrameProduct } from '../lib/pos'
+import { enqueueSale, isNetworkError } from '../lib/offlineQueue'
+import { CartLine, FrameProduct, PosSaleView } from '../lib/pos'
+import { printSaleReceipt } from '../lib/receipt'
 import { colors, font, formatKwacha, radius, spacing } from '../theme'
-import { Button, Card, EmptyState, Field, ListRow, Loading, QtyStepper, Select, StatRow } from '../ui/components'
+import { Badge, Button, Card, EmptyState, Field, ListRow, Loading, QtyStepper, Select, StatRow } from '../ui/components'
 
 const PAYMENT_METHODS = [
   { value: 'CASH', label: 'Cash' },
@@ -30,6 +32,8 @@ export default function FrameSell() {
   const [method, setMethod] = useState<string>('CASH')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastSale, setLastSale] = useState<PosSaleView | null>(null)
+  const [queuedOffline, setQueuedOffline] = useState(false)
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['catalog-products'],
@@ -66,22 +70,33 @@ export default function FrameSell() {
     if (!store || cart.length === 0) return
     setBusy(true)
     setError(null)
+    const body = {
+      storeId: store.id,
+      items: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity, unitPriceMinor: null, discountMinor: null })),
+      payments: [{ method, amountMinor: total, reference: null }],
+      customerName: customerName.trim() || null,
+      customerPhone: null,
+      notes: '',
+      clientReference: Crypto.randomUUID(),
+    }
     try {
-      await api.post('/admin/pos/sales', {
-        storeId: store.id,
-        items: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity, unitPriceMinor: null, discountMinor: null })),
-        payments: [{ method, amountMinor: total, reference: null }],
-        customerName: customerName.trim() || null,
-        customerPhone: null,
-        notes: '',
-        clientReference: Crypto.randomUUID(),
-      })
+      const { data } = await api.post<PosSaleView>('/admin/pos/sales', body)
       setCart([])
       setCustomerName('')
+      setLastSale(data)
       qc.invalidateQueries({ queryKey: ['pos-inventory', store.id] })
-      router.push('/reports')
     } catch (e) {
-      setError(apiError(e))
+      if (isNetworkError(e)) {
+        // No signal right now -- queue it rather than lose the sale; it replays automatically
+        // once connectivity returns (see src/lib/offlineQueue.ts). No receipt to print yet
+        // since there's no server response.
+        await enqueueSale('/admin/pos/sales', body, body.clientReference)
+        setCart([])
+        setCustomerName('')
+        setQueuedOffline(true)
+      } else {
+        setError(apiError(e))
+      }
     } finally {
       setBusy(false)
     }
@@ -91,6 +106,22 @@ export default function FrameSell() {
     return (
       <EmptyState icon="home" title="Pick a shop first" hint="Frame stock and sales are tracked per shop."
         action={<Button label="Choose a shop" onPress={() => router.push('/store-picker')} />} />
+    )
+  }
+
+  if (lastSale || queuedOffline) {
+    return (
+      <Card style={{ marginTop: spacing.lg, gap: spacing.md, alignItems: 'center' }}>
+        <Badge label={queuedOffline ? 'Saved — will sync when back online' : 'Sale complete'} tone={queuedOffline ? 'warning' : 'success'} />
+        {lastSale && (
+          <>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 28, color: colors.text }}>{formatKwacha(lastSale.totalMinor)}</Text>
+            <Text style={{ fontFamily: font.regular, fontSize: 13, color: colors.textMuted }}>{lastSale.receiptNumber}</Text>
+            <Button label="Print receipt" variant="secondary" onPress={() => printSaleReceipt(lastSale, store.name)} />
+          </>
+        )}
+        <Button label="New sale" onPress={() => { setLastSale(null); setQueuedOffline(false) }} size="lg" />
+      </Card>
     )
   }
 

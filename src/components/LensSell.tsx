@@ -1,10 +1,12 @@
+import * as Crypto from 'expo-crypto'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Text } from 'react-native'
 import { api, apiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { enqueueSale, isNetworkError } from '../lib/offlineQueue'
 import { colors, spacing } from '../theme'
-import { Button, Card, Field, Select, Toggle } from '../ui/components'
+import { Badge, Button, Card, Field, Select, Toggle } from '../ui/components'
 
 const LENS_TYPES = [
   { value: 'CLEAR', label: 'Clear' },
@@ -36,6 +38,7 @@ export default function LensSell() {
   const [method, setMethod] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [queuedOffline, setQueuedOffline] = useState(false)
 
   const canSubmit = customerName.trim().length > 0 && method
 
@@ -43,34 +46,49 @@ export default function LensSell() {
     if (!canSubmit) return
     setBusy(true)
     setError(null)
+    const body = {
+      customerName: customerName.trim(),
+      phone: phone.trim() || null,
+      lensType,
+      blueBlock,
+      addPower: structure ? 1 : null, // ponytail: counter sale just picks bifocal/progressive, not the exact Add power
+      lensStructure: structure || null,
+      paymentMethod: method,
+      soldBy: user?.name ?? user?.email,
+      shopName: null,
+      clientReference: Crypto.randomUUID(),
+    }
     try {
-      await api.post('/admin/lens-sales/walk-in', {
-        customerName: customerName.trim(),
-        phone: phone.trim() || null,
-        lensType,
-        blueBlock,
-        addPower: structure ? 1 : null, // ponytail: counter sale just picks bifocal/progressive, not the exact Add power
-        lensStructure: structure || null,
-        paymentMethod: method,
-        soldBy: user?.name ?? user?.email,
-        shopName: null,
-      })
-      setCustomerName('')
-      setPhone('')
-      setLensType('CLEAR')
-      setBlueBlock(false)
-      setStructure('')
-      setMethod('')
+      await api.post('/admin/lens-sales/walk-in', body)
+      reset()
       router.push('/reports')
     } catch (e) {
-      setError(apiError(e))
+      if (isNetworkError(e)) {
+        // Same clientReference is sent on replay -- the backend now dedupes on it
+        // (LensInquiryService.walkInSale), so a retry can't double-sell.
+        await enqueueSale('/admin/lens-sales/walk-in', body, body.clientReference)
+        reset()
+        setQueuedOffline(true)
+      } else {
+        setError(apiError(e))
+      }
     } finally {
       setBusy(false)
     }
   }
 
+  function reset() {
+    setCustomerName('')
+    setPhone('')
+    setLensType('CLEAR')
+    setBlueBlock(false)
+    setStructure('')
+    setMethod('')
+  }
+
   return (
     <Card style={{ marginTop: spacing.lg, gap: spacing.md }}>
+      {queuedOffline && <Badge label="Last sale saved — will sync when back online" tone="warning" />}
       <Field label="Customer name" value={customerName} onChangeText={setCustomerName} placeholder="Required" />
       <Field label="Phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       <Select label="Lens type" value={lensType} options={LENS_TYPES as any} onChange={setLensType} />
