@@ -31,6 +31,9 @@ jobs:
         env:
           CI: 1
 
+      - name: Apply pre-rendered launcher icons
+        run: node scripts/apply-android-icons.js
+
       - name: Patch in release signing config
         run: node scripts/apply-release-signing.js
 
