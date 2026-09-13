@@ -24,7 +24,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
 
       - name: Prebuild native android project
         run: npx expo prebuild --platform android
