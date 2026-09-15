@@ -138,4 +138,8 @@ export type StaffDetail = { id: string; name: string; email: string; role: strin
 
 export type VersionInfo = { version: string; buildNumber: number; minimumBuild: number; downloadUrl: string; notes: string; mandatory: boolean }
 
-export type StoreView = { id: string; name: string; code: string; city: string; active: boolean }
+export type StoreView = {
+  id: string; name: string; code: string; city: string; active: boolean
+  // map pin — set = this shop's stock sells online and it ships the nearest web orders
+  latitude: number | null; longitude: number | null
+}

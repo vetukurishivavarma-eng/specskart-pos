@@ -16,6 +16,13 @@ export default function More() {
       <Subtitle>{user?.name ?? user?.email} — {store?.name ?? 'No shop selected'}</Subtitle>
 
       <View>
+        <SectionLabel>Customers</SectionLabel>
+        <Card>
+          <ListRow icon="user-plus" title="Add walk-in customer" subtitle="Verify their WhatsApp & sign them up for offers" onPress={() => router.push('/walk-in')} />
+        </Card>
+      </View>
+
+      <View>
         <SectionLabel>Lens business</SectionLabel>
         <Card>
           <ListRow icon="inbox" title="Web orders" subtitle="Verified online, awaiting pickup" onPress={() => router.push('/orders')} />

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { FlatList, View } from 'react-native'
-import { api } from '../src/lib/api'
+import { api, apiError } from '../src/lib/api'
 import { StoreView } from '../src/lib/pos'
 import { spacing } from '../src/theme'
 import { Badge, Button, Card, Field, ListRow, RowDivider, Title, Toggle } from '../src/ui/components'
@@ -12,6 +12,9 @@ export default function Shops() {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [city, setCity] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
+  const [location, setLocation] = useState('')
+  const [error, setError] = useState('')
 
   const { data } = useQuery({
     queryKey: ['pos-stores-admin'],
@@ -24,6 +27,17 @@ export default function Shops() {
     setName(''); setCode(''); setCity(''); setAdding(false)
     qc.invalidateQueries({ queryKey: ['pos-stores-admin'] })
     qc.invalidateQueries({ queryKey: ['pos-stores'] })
+  }
+
+  async function saveLocation(s: StoreView) {
+    try {
+      await api.put(`/admin/pos/stores/${s.id}`, { location: location.trim() })
+      setEditing(null)
+      setError('')
+      qc.invalidateQueries({ queryKey: ['pos-stores-admin'] })
+    } catch (e) {
+      setError(apiError(e))
+    }
   }
 
   async function toggleActive(s: StoreView) {
@@ -54,10 +68,16 @@ export default function Shops() {
         </View>
       }
       renderItem={({ item }) => (
+        <View>
         <ListRow
           icon="home"
           title={item.name}
-          subtitle={`${item.code}${item.city ? ` · ${item.city}` : ''}`}
+          subtitle={`${item.code}${item.city ? ` · ${item.city}` : ''} · ${item.latitude != null ? '📍 ships online orders' : 'no map pin, not used for online orders'}`}
+          onPress={() => {
+            setEditing(editing === item.id ? null : item.id)
+            setLocation(item.latitude != null ? `${item.latitude}, ${item.longitude}` : '')
+            setError('')
+          }}
           trailing={
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               {!item.active && <Badge label="Inactive" tone="neutral" />}
@@ -65,6 +85,21 @@ export default function Shops() {
             </View>
           }
         />
+        {editing === item.id && (
+          <Card style={{ marginBottom: spacing.md, gap: spacing.md }}>
+            <Field
+              label="Map location (lat, lng)"
+              value={location}
+              onChangeText={setLocation}
+              placeholder="-15.4167, 28.2833"
+              autoCapitalize="none"
+              hint="Google Maps: long-press the shop, copy the numbers. Empty = this shop stops shipping online orders."
+              error={error || undefined}
+            />
+            <Button label="Save location" onPress={() => saveLocation(item)} />
+          </Card>
+        )}
+        </View>
       )}
     />
   )
