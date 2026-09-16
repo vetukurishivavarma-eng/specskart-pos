@@ -120,6 +120,7 @@ export default function RootLayout() {
             <Stack.Screen name="forgot-password" options={{ headerShown: true, title: 'Forgot password' }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="orders" options={{ headerShown: true, title: 'Web orders' }} />
+            <Stack.Screen name="deliveries" options={{ headerShown: true, title: 'Deliveries' }} />
             <Stack.Screen name="walk-in" options={{ headerShown: true, title: 'Add customer' }} />
             <Stack.Screen name="pricing" options={{ headerShown: true, title: 'Lens pricing' }} />
             <Stack.Screen name="devices" options={{ headerShown: true, title: 'My devices' }} />

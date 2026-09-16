@@ -27,6 +27,8 @@ export default function More() {
         <Card>
           <ListRow icon="inbox" title="Web orders" subtitle="Verified online, awaiting pickup" onPress={() => router.push('/orders')} />
           <RowDivider />
+          <ListRow icon="truck" title="Deliveries" subtitle="Pack & deliver website orders for this shop" onPress={() => router.push('/deliveries')} />
+          <RowDivider />
           <ListRow icon="tag" title="Lens pricing" subtitle="Edit prices & stock flags" onPress={() => router.push('/pricing')} />
         </Card>
       </View>
