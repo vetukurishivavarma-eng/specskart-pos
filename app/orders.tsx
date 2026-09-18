@@ -7,6 +7,21 @@ import { SaleView } from '../src/lib/lens'
 import { colors, font, formatKwacha, spacing } from '../src/theme'
 import { Badge, Button, Card, EmptyState, Loading, Select, Title } from '../src/ui/components'
 
+// Doorstep ladder, in order. Staff move an order one rung at a time; the last rung also
+// bills it, so that's the only step that needs a payment method.
+const LADDER = ['ORDERED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const
+const STAGE_LABEL: Record<string, string> = {
+  ORDERED: 'Ordered',
+  PACKED: 'Packed',
+  OUT_FOR_DELIVERY: 'Out for delivery',
+  DELIVERED: 'Delivered',
+}
+const NEXT_ACTION: Record<string, string> = {
+  ORDERED: 'Mark packed',
+  PACKED: 'Send out for delivery',
+  OUT_FOR_DELIVERY: 'Mark delivered',
+}
+
 const PAYMENT_METHODS = [
   { value: '', label: 'Pick payment' },
   { value: 'CASH', label: 'Cash' },
@@ -46,12 +61,20 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function complete() {
-    if (!method) return
+  const stage = sale.fulfilment ?? 'ORDERED'
+  const next = LADDER[LADDER.indexOf(stage as any) + 1]
+  const delivering = next === 'DELIVERED' // the rung that also bills it
+
+  async function advance() {
+    if (delivering && !method) return
     setBusy(true)
     setError(null)
     try {
-      await api.post(`/admin/lens-sales/${sale.id}/complete`, { paymentMethod: method, soldBy: user?.name ?? user?.email })
+      await api.post(`/admin/lens-sales/${sale.id}/fulfilment`, {
+        stage: next,
+        paymentMethod: delivering ? method : undefined,
+        soldBy: user?.name ?? user?.email,
+      })
       onDone()
     } catch (e) {
       setError(apiError(e))
@@ -63,6 +86,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
   return (
     <Card style={{ marginBottom: spacing.md, gap: spacing.sm }}>
       <Text style={styles.name}>{sale.customerName ?? 'Unnamed customer'}</Text>
+      <Badge label={STAGE_LABEL[stage] ?? stage} tone={stage === 'OUT_FOR_DELIVERY' ? 'warning' : 'neutral'} />
       <Text style={styles.detail}>
         {sale.lensType}{sale.blueBlock ? ' + blue block' : ''}{sale.lensStructure ? ` + ${sale.lensStructure.toLowerCase()}` : ''}
       </Text>
@@ -78,9 +102,17 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
         </View>
       ) : null}
 
-      <Select value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />
+      {delivering && <Select value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />}
       {error && <Text style={styles.error}>{error}</Text>}
-      <Button label={busy ? 'Completing…' : 'Mark as sold'} onPress={complete} disabled={!method} loading={busy} />
+      {next && (
+        <Button
+          label={busy ? 'Saving…' : NEXT_ACTION[stage]}
+          onPress={advance}
+          disabled={delivering && !method}
+          loading={busy}
+        />
+      )}
+      {delivering && !method && <Text style={styles.hint}>Pick how they paid to close the order.</Text>}
     </Card>
   )
 }
@@ -92,5 +124,6 @@ const styles = StyleSheet.create({
   price: { fontFamily: font.bold, fontSize: 20, color: colors.text },
   error: { fontFamily: font.medium, fontSize: 13, color: colors.danger },
   deliver: { gap: 2, borderLeftWidth: 3, borderLeftColor: colors.borderStrong, paddingLeft: spacing.sm },
+  hint: { fontFamily: font.regular, fontSize: 12, color: colors.textMuted },
   deliverLabel: { fontFamily: font.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.textMuted },
 })

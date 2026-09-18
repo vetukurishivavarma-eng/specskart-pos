@@ -18,5 +18,6 @@ export type SaleView = {
   deliveryAddress: string | null
   deliveryArea: string | null
   deliveryLandmark: string | null
+  fulfilment: 'ORDERED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | null
   createdAt: string
 }
