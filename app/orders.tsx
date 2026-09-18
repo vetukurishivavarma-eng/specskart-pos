@@ -69,6 +69,15 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
       {sale.specialAxis && <Badge label="Special axis — check before handing over" tone="warning" />}
       <Text style={styles.price}>{formatKwacha(sale.priceMinor)}</Text>
 
+      {sale.deliveryAddress ? (
+        <View style={styles.deliver}>
+          <Text style={styles.deliverLabel}>Deliver to</Text>
+          <Text style={styles.detail}>{sale.deliveryName ?? sale.customerName ?? '—'}</Text>
+          <Text style={styles.detail}>{sale.deliveryAddress}{sale.deliveryArea ? `, ${sale.deliveryArea}` : ''}</Text>
+          {sale.deliveryLandmark ? <Text style={styles.detail}>Landmark: {sale.deliveryLandmark}</Text> : null}
+        </View>
+      ) : null}
+
       <Select value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />
       {error && <Text style={styles.error}>{error}</Text>}
       <Button label={busy ? 'Completing…' : 'Mark as sold'} onPress={complete} disabled={!method} loading={busy} />
@@ -82,4 +91,6 @@ const styles = StyleSheet.create({
   detail: { fontFamily: font.regular, fontSize: 13, color: colors.textMuted },
   price: { fontFamily: font.bold, fontSize: 20, color: colors.text },
   error: { fontFamily: font.medium, fontSize: 13, color: colors.danger },
+  deliver: { gap: 2, borderLeftWidth: 3, borderLeftColor: colors.borderStrong, paddingLeft: spacing.sm },
+  deliverLabel: { fontFamily: font.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.textMuted },
 })
