@@ -63,7 +63,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
 
   const stage = sale.fulfilment ?? 'ORDERED'
   const next = LADDER[LADDER.indexOf(stage as any) + 1]
-  const delivering = next === 'DELIVERED' // the rung that also bills it
+  const delivering = next === 'DELIVERED' && !sale.paid // the rung that also bills it, unless already paid online
 
   async function advance() {
     if (delivering && !method) return
@@ -86,7 +86,10 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
   return (
     <Card style={{ marginBottom: spacing.md, gap: spacing.sm }}>
       <Text style={styles.name}>{sale.customerName ?? 'Unnamed customer'}</Text>
-      <Badge label={STAGE_LABEL[stage] ?? stage} tone={stage === 'OUT_FOR_DELIVERY' ? 'warning' : 'neutral'} />
+      <View style={styles.badges}>
+        <Badge label={STAGE_LABEL[stage] ?? stage} tone={stage === 'OUT_FOR_DELIVERY' ? 'warning' : 'neutral'} />
+        {sale.paid && <Badge label="Paid online" tone="success" />}
+      </View>
       <Text style={styles.detail}>
         {sale.lensType}{sale.blueBlock ? ' + blue block' : ''}{sale.lensStructure ? ` + ${sale.lensStructure.toLowerCase()}` : ''}
       </Text>
@@ -124,6 +127,7 @@ const styles = StyleSheet.create({
   price: { fontFamily: font.bold, fontSize: 20, color: colors.text },
   error: { fontFamily: font.medium, fontSize: 13, color: colors.danger },
   deliver: { gap: 2, borderLeftWidth: 3, borderLeftColor: colors.borderStrong, paddingLeft: spacing.sm },
+  badges: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   hint: { fontFamily: font.regular, fontSize: 12, color: colors.textMuted },
   deliverLabel: { fontFamily: font.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.textMuted },
 })

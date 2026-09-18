@@ -19,5 +19,6 @@ export type SaleView = {
   deliveryArea: string | null
   deliveryLandmark: string | null
   fulfilment: 'ORDERED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | null
+  paid: boolean
   createdAt: string
 }
