@@ -32,9 +32,13 @@ const PAYMENT_METHODS = [
 
 export default function Orders() {
   const qc = useQueryClient()
+  // Delivering an order used to make it vanish with nowhere to look it up: this screen is
+  // "not delivered yet", and Reports filters on a different field for a single day.
+  const [done, setDone] = useState(false)
   const { data, isLoading } = useQuery({
-    queryKey: ['lens-sales-pending'],
-    queryFn: async () => (await api.get<SaleView[]>('/admin/lens-sales/pending')).data,
+    queryKey: ['lens-sales-pending', done],
+    queryFn: async () =>
+      (await api.get<SaleView[]>('/admin/lens-sales/pending', { params: { delivered: done } })).data,
     refetchInterval: 30_000,
   })
 
@@ -42,35 +46,56 @@ export default function Orders() {
   const { list, linkedId, missing } = useLinkedRow(data)
 
   if (isLoading) return <Loading />
-  if (!list.length) {
-    return (
-      <EmptyState
-        icon="inbox"
-        title={linkedId ? 'That order is not waiting here' : 'No web orders waiting'}
-        hint={
-          linkedId
-            ? 'It has probably been paid for already, or it belongs to another shop.'
-            : 'Orders verified over WhatsApp will show up here for pickup.'
-        }
-      />
-    )
-  }
+
+  const header = (
+    <View style={{ marginBottom: spacing.md, gap: spacing.md }}>
+      <Title>Web orders</Title>
+      <View style={styles.tabs}>
+        <Button
+          label="To do"
+          variant={done ? 'ghost' : 'primary'}
+          onPress={() => setDone(false)}
+          style={{ flex: 1 }}
+        />
+        <Button
+          label="Delivered"
+          variant={done ? 'primary' : 'ghost'}
+          onPress={() => setDone(true)}
+          style={{ flex: 1 }}
+        />
+      </View>
+      {missing ? (
+        <Text style={styles.hint}>
+          The order from that alert is not in this list — try the other tab.
+        </Text>
+      ) : null}
+    </View>
+  )
 
   return (
     <FlatList
       contentContainerStyle={styles.list}
       data={list}
       keyExtractor={(o) => o.id}
-      ListHeaderComponent={
-        <View style={{ marginBottom: spacing.md, gap: spacing.sm }}>
-          <Title>Web orders</Title>
-          {missing ? (
-            <Text style={styles.hint}>
-              The order from that alert is not in this list — it has probably been dealt with, or
-              it belongs to another shop.
-            </Text>
-          ) : null}
-        </View>
+      ListHeaderComponent={header}
+      ListEmptyComponent={
+        done ? (
+          <EmptyState
+            icon="check"
+            title="Nothing delivered yet"
+            hint="Orders you hand over will be listed here."
+          />
+        ) : (
+          <EmptyState
+            icon="inbox"
+            title={linkedId ? 'That order is not waiting here' : 'No web orders waiting'}
+            hint={
+              linkedId
+                ? 'It may already have been delivered — check the Delivered tab.'
+                : 'Orders verified over WhatsApp will show up here for pickup.'
+            }
+          />
+        )
       }
       renderItem={({ item }) => (
         <SaleCard sale={item} onDone={() => qc.invalidateQueries({ queryKey: ['lens-sales-pending'] })} />
@@ -146,6 +171,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
 
 const styles = StyleSheet.create({
   list: { padding: spacing.lg },
+  tabs: { flexDirection: 'row', gap: spacing.sm },
   name: { fontFamily: font.bold, fontSize: 16, color: colors.text },
   detail: { fontFamily: font.regular, fontSize: 13, color: colors.textMuted },
   price: { fontFamily: font.bold, fontSize: 20, color: colors.text },
