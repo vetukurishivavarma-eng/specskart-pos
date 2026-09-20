@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { api, apiError } from '../src/lib/api'
 import { useAuth } from '../src/lib/auth'
+import { useLinkedRow } from '../src/lib/deepLink'
 import { SaleView } from '../src/lib/lens'
 import { colors, font, formatKwacha, spacing } from '../src/theme'
 import { Badge, Button, Card, EmptyState, Loading, Select, Title } from '../src/ui/components'
@@ -37,17 +38,40 @@ export default function Orders() {
     refetchInterval: 30_000,
   })
 
+  // Opened from a staff WhatsApp alert: ?id= names the order that alert was about.
+  const { list, linkedId, missing } = useLinkedRow(data)
+
   if (isLoading) return <Loading />
-  if (!data?.length) {
-    return <EmptyState icon="inbox" title="No web orders waiting" hint="Orders verified over WhatsApp will show up here for pickup." />
+  if (!list.length) {
+    return (
+      <EmptyState
+        icon="inbox"
+        title={linkedId ? 'That order is not waiting here' : 'No web orders waiting'}
+        hint={
+          linkedId
+            ? 'It has probably been paid for already, or it belongs to another shop.'
+            : 'Orders verified over WhatsApp will show up here for pickup.'
+        }
+      />
+    )
   }
 
   return (
     <FlatList
       contentContainerStyle={styles.list}
-      data={data}
+      data={list}
       keyExtractor={(o) => o.id}
-      ListHeaderComponent={<Title style={{ marginBottom: spacing.md }}>Web orders</Title>}
+      ListHeaderComponent={
+        <View style={{ marginBottom: spacing.md, gap: spacing.sm }}>
+          <Title>Web orders</Title>
+          {missing ? (
+            <Text style={styles.hint}>
+              The order from that alert is not in this list — it has probably been dealt with, or
+              it belongs to another shop.
+            </Text>
+          ) : null}
+        </View>
+      }
       renderItem={({ item }) => (
         <SaleCard sale={item} onDone={() => qc.invalidateQueries({ queryKey: ['lens-sales-pending'] })} />
       )}

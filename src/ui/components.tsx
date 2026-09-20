@@ -306,19 +306,30 @@ export function Toggle({
   onChange: (value: boolean) => void;
   disabled?: boolean;
 }) {
+  const control = (
+    <Switch
+      value={value}
+      onValueChange={onChange}
+      disabled={disabled}
+      trackColor={{ false: colors.borderStrong, true: colors.primaryBright }}
+      thumbColor={colors.surface}
+    />
+  );
+
+  // An unlabelled toggle is a bare control borrowed into somebody else's row -- a
+  // ListRow trailing slot, a card header. Wrapping it in the labelled form there is
+  // what blanked the staff list: the flex:1 label block has nothing to show but
+  // still claims the row, collapsing the real title and subtitle to zero width and
+  // pushing the switch off the right edge.
+  if (!label && !hint) return control;
+
   return (
     <View style={styles.toggleRow}>
       <View style={{ flex: 1, paddingRight: spacing.md }}>
         <Text style={styles.toggleLabel}>{label}</Text>
         {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
       </View>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        disabled={disabled}
-        trackColor={{ false: colors.borderStrong, true: colors.primaryBright }}
-        thumbColor={colors.surface}
-      />
+      {control}
     </View>
   );
 }

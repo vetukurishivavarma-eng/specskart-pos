@@ -7,7 +7,7 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans'
-import { Stack, useRouter, useSegments } from 'expo-router'
+import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef } from 'react'
 import { AppState, View } from 'react-native'
@@ -30,20 +30,44 @@ const queryClient = new QueryClient({
   },
 })
 
+/** "/orders" plus the "?id=..." a deep link arrived with, so it can be replayed after a login. */
+function hrefOf(pathname: string, params: Record<string, unknown>): string {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === 'string' && value) query.set(key, value)
+  }
+  const q = query.toString()
+  return q ? `${pathname}?${q}` : pathname
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { token, hydrated, hydrate } = useAuth()
   const storeHydrated = useActiveStore((s) => s.hydrated)
   const hydrateStore = useActiveStore((s) => s.hydrate)
   const segments = useSegments()
+  const pathname = usePathname()
+  const params = useGlobalSearchParams()
   const router = useRouter()
+  /** Where the user was heading before being sent to the login screen. */
+  const pending = useRef<string | null>(null)
 
   useEffect(() => { hydrate(); hydrateStore() }, [])
 
   useEffect(() => {
     if (!hydrated) return
     const onLogin = segments[0] === 'login' || segments[0] === 'forgot-password'
-    if (!token && !onLogin) router.replace('/login')
-    if (token && onLogin) router.replace('/')
+    if (!token && !onLogin) {
+      // A staff WhatsApp alert deep-links straight to one order. On a device that had been
+      // signed out that destination used to be dropped on the floor and the packer landed on
+      // the home screen with no idea which order the message was about.
+      if (pathname && pathname !== '/') pending.current = hrefOf(pathname, params)
+      router.replace('/login')
+    }
+    if (token && onLogin) {
+      const next = pending.current
+      pending.current = null
+      router.replace((next ?? '/') as never)
+    }
   }, [hydrated, token, segments])
 
   if (!hydrated || !storeHydrated) {

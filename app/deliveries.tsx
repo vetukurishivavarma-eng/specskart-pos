@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { FlatList, Linking, StyleSheet, Text, View } from 'react-native'
 import { api, apiError } from '../src/lib/api'
 import { useActiveStore } from '../src/lib/activeStore'
+import { useLinkedRow } from '../src/lib/deepLink'
 import { colors, font, formatKwacha, spacing } from '../src/theme'
 import { Badge, Button, Card, EmptyState, Loading, Title } from '../src/ui/components'
 
@@ -70,12 +71,15 @@ export default function Deliveries() {
     refetchInterval: 30_000,
   })
 
+  // Opened from a staff WhatsApp alert: ?id= names the order that alert was about.
+  const { list, missing } = useLinkedRow(data)
+
   if (isLoading) return <Loading />
 
   return (
     <FlatList
       contentContainerStyle={styles.list}
-      data={data ?? []}
+      data={list}
       keyExtractor={(o) => o.id}
       ListHeaderComponent={
         <View style={{ gap: spacing.md, marginBottom: spacing.md }}>
@@ -84,6 +88,12 @@ export default function Deliveries() {
             <Button label="To do" variant={done ? 'ghost' : 'primary'} onPress={() => setDone(false)} style={{ flex: 1 }} />
             <Button label="Delivered" variant={done ? 'primary' : 'ghost'} onPress={() => setDone(true)} style={{ flex: 1 }} />
           </View>
+          {missing ? (
+            <Text style={styles.meta}>
+              The order from that alert is not in this list — try the other tab, or check it was
+              routed to this shop.
+            </Text>
+          ) : null}
         </View>
       }
       ListEmptyComponent={
