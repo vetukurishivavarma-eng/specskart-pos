@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native'
 import { api, apiError } from '../src/lib/api'
 import { useAuth } from '../src/lib/auth'
 import { useLinkedRow } from '../src/lib/deepLink'
@@ -132,6 +132,29 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
     }
   }
 
+  // A web order that won't go ahead: its pair of lens blanks goes back on the shelf.
+  function cancel() {
+    Alert.alert('Cancel this order?', sale.paid
+      ? 'The customer is told on WhatsApp. They paid online: refund them from the Flutterwave dashboard.'
+      : 'The customer is told on WhatsApp.', [
+      { text: 'Keep it', style: 'cancel' },
+      {
+        text: 'Cancel order', style: 'destructive', onPress: async () => {
+          setBusy(true)
+          setError(null)
+          try {
+            await api.post(`/admin/lens-sales/${sale.id}/cancel`)
+            onDone()
+          } catch (e) {
+            setError(apiError(e))
+          } finally {
+            setBusy(false)
+          }
+        },
+      },
+    ])
+  }
+
   return (
     <Card style={{ marginBottom: spacing.md, gap: spacing.sm }}>
       <Text style={styles.name}>{sale.customerName ?? 'Unnamed customer'}</Text>
@@ -165,6 +188,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
         />
       )}
       {delivering && !method && <Text style={styles.hint}>Pick how they paid to close the order.</Text>}
+      {next && <Button label="Cancel order" variant="ghost" onPress={cancel} disabled={busy} />}
     </Card>
   )
 }

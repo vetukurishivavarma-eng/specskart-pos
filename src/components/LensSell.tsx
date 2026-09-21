@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Text } from 'react-native'
 import { api, apiError } from '../lib/api'
+import { useActiveStore } from '../lib/activeStore'
 import { useAuth } from '../lib/auth'
 import { enqueueSale, isNetworkError } from '../lib/offlineQueue'
 import { colors, spacing } from '../theme'
@@ -24,11 +25,12 @@ const PAYMENT_METHODS = [
 ] as const
 
 /** Counter sale for the lens funnel — no WhatsApp step, staff enter lens type/blue-block/
- *  add-on directly. Lenses have no stock concept (made to order), so this bypasses the
- *  per-store inventory pipeline FrameSell uses. */
+ *  add-on directly. One pair of lens blanks comes off this shop's shelf (backend V45); with
+ *  none left the sale still goes through, flagged as a backorder. */
 export default function LensSell() {
   const router = useRouter()
   const user = useAuth((s) => s.user)
+  const store = useActiveStore((s) => s.store)
 
   const [customerName, setCustomerName] = useState('')
   const [phone, setPhone] = useState('')
@@ -57,6 +59,7 @@ export default function LensSell() {
       soldBy: user?.name ?? user?.email,
       shopName: null,
       clientReference: Crypto.randomUUID(),
+      storeId: store?.id ?? null,
     }
     try {
       await api.post('/admin/lens-sales/walk-in', body)

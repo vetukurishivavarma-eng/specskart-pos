@@ -4,7 +4,7 @@ import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
 import { api } from '../src/lib/api'
 import { PricingOption } from '../src/lib/lens'
 import { colors, font, formatKwacha, radius, spacing } from '../src/theme'
-import { Button, Card, Loading, RowDivider, Title, Toggle } from '../src/ui/components'
+import { Button, Card, Loading, RowDivider, Title } from '../src/ui/components'
 
 export default function Pricing() {
   const qc = useQueryClient()
@@ -20,7 +20,13 @@ export default function Pricing() {
       contentContainerStyle={styles.list}
       data={data}
       keyExtractor={(o) => o.id}
-      ListHeaderComponent={<Title style={{ marginBottom: spacing.md }}>Lens pricing</Title>}
+      ListHeaderComponent={
+        <View style={{ marginBottom: spacing.md }}>
+          <Title>Lens pricing</Title>
+          {/* the old on/off stock switch was never enforced; blanks are counted per shop now */}
+          <Text style={styles.current}>Lens stock is counted per shop on the Stock tab (Lens blank items).</Text>
+        </View>
+      }
       ItemSeparatorComponent={RowDivider}
       renderItem={({ item }) => (
         <Row option={item} onSaved={() => qc.invalidateQueries({ queryKey: ['lens-pricing'] })} />
@@ -46,11 +52,6 @@ function Row({ option, onSaved }: { option: PricingOption; onSaved: () => void }
     }
   }
 
-  async function toggleStock(v: boolean) {
-    await api.patch(`/admin/lens-pricing/${option.id}`, { inStock: v })
-    onSaved()
-  }
-
   return (
     <Card style={{ marginBottom: spacing.md, gap: spacing.md }}>
       <View style={styles.header}>
@@ -58,7 +59,6 @@ function Row({ option, onSaved }: { option: PricingOption; onSaved: () => void }
           <Text style={styles.label}>{option.label}</Text>
           <Text style={styles.current}>Current: {formatKwacha(option.priceMinor)}</Text>
         </View>
-        <Toggle label="" value={option.inStock} onChange={toggleStock} />
       </View>
       <View style={styles.priceRow}>
         <View style={styles.input}>

@@ -29,7 +29,7 @@ export default function More() {
           <RowDivider />
           <ListRow icon="truck" title="Deliveries" subtitle="Pack & deliver website orders for this shop" onPress={() => router.push('/deliveries')} />
           <RowDivider />
-          <ListRow icon="tag" title="Lens pricing" subtitle="Edit prices & stock flags" onPress={() => router.push('/pricing')} />
+          <ListRow icon="tag" title="Lens pricing" subtitle="Edit lens prices" onPress={() => router.push('/pricing')} />
         </Card>
       </View>
 
