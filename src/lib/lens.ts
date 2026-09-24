@@ -14,11 +14,7 @@ export type SaleView = {
   soldBy: string | null
   shopName: string | null
   walkIn: boolean
-  deliveryName: string | null
-  deliveryAddress: string | null
-  deliveryArea: string | null
-  deliveryLandmark: string | null
-  fulfilment: 'ORDERED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | null
+  fulfilment: 'ORDERED' | 'READY' | 'DELIVERED' | null
   paid: boolean
   createdAt: string
 }

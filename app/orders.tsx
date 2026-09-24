@@ -8,19 +8,18 @@ import { SaleView } from '../src/lib/lens'
 import { colors, font, formatKwacha, spacing } from '../src/theme'
 import { Badge, Button, Card, EmptyState, Loading, Select, Title } from '../src/ui/components'
 
-// Doorstep ladder, in order. Staff move an order one rung at a time; the last rung also
-// bills it, so that's the only step that needs a payment method.
-const LADDER = ['ORDERED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const
+// Collection ladder, in order. Staff move an order one rung at a time; the last rung also
+// bills it and takes the pair off this shop's shelf, so that's the only step that needs a
+// payment method. DELIVERED means collected — the stored name predates shop pickup.
+const LADDER = ['ORDERED', 'READY', 'DELIVERED'] as const
 const STAGE_LABEL: Record<string, string> = {
-  ORDERED: 'Ordered',
-  PACKED: 'Packed',
-  OUT_FOR_DELIVERY: 'Out for delivery',
-  DELIVERED: 'Delivered',
+  ORDERED: 'Being made',
+  READY: 'Ready for pickup',
+  DELIVERED: 'Collected',
 }
 const NEXT_ACTION: Record<string, string> = {
-  ORDERED: 'Mark packed',
-  PACKED: 'Send out for delivery',
-  OUT_FOR_DELIVERY: 'Mark delivered',
+  ORDERED: 'Mark ready for pickup',
+  READY: 'Mark collected',
 }
 
 const PAYMENT_METHODS = [
@@ -32,8 +31,8 @@ const PAYMENT_METHODS = [
 
 export default function Orders() {
   const qc = useQueryClient()
-  // Delivering an order used to make it vanish with nowhere to look it up: this screen is
-  // "not delivered yet", and Reports filters on a different field for a single day.
+  // Handing an order over used to make it vanish with nowhere to look it up: this screen is
+  // "not collected yet", and Reports filters on a different field for a single day.
   const [done, setDone] = useState(false)
   const { data, isLoading } = useQuery({
     queryKey: ['lens-sales-pending', done],
@@ -58,7 +57,7 @@ export default function Orders() {
           style={{ flex: 1 }}
         />
         <Button
-          label="Delivered"
+          label="Collected"
           variant={done ? 'primary' : 'ghost'}
           onPress={() => setDone(true)}
           style={{ flex: 1 }}
@@ -82,7 +81,7 @@ export default function Orders() {
         done ? (
           <EmptyState
             icon="check"
-            title="Nothing delivered yet"
+            title="Nothing collected yet"
             hint="Orders you hand over will be listed here."
           />
         ) : (
@@ -91,7 +90,7 @@ export default function Orders() {
             title={linkedId ? 'That order is not waiting here' : 'No web orders waiting'}
             hint={
               linkedId
-                ? 'It may already have been delivered — check the Delivered tab.'
+                ? 'It may already have been collected — check the Collected tab.'
                 : 'Orders verified over WhatsApp will show up here for pickup.'
             }
           />
@@ -112,16 +111,16 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
 
   const stage = sale.fulfilment ?? 'ORDERED'
   const next = LADDER[LADDER.indexOf(stage as any) + 1]
-  const delivering = next === 'DELIVERED' && !sale.paid // the rung that also bills it, unless already paid online
+  const handover = next === 'DELIVERED' && !sale.paid // the rung that also bills it, unless already paid online
 
   async function advance() {
-    if (delivering && !method) return
+    if (handover && !method) return
     setBusy(true)
     setError(null)
     try {
       await api.post(`/admin/lens-sales/${sale.id}/fulfilment`, {
         stage: next,
-        paymentMethod: delivering ? method : undefined,
+        paymentMethod: handover ? method : undefined,
         soldBy: user?.name ?? user?.email,
       })
       onDone()
@@ -132,7 +131,8 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
     }
   }
 
-  // A web order that won't go ahead: its pair of lens blanks goes back on the shelf.
+  // A web order that won't go ahead. Nothing was taken off the shelf unless it was already
+  // collected, and a collected order can't be cancelled, so there is nothing to put back.
   function cancel() {
     Alert.alert('Cancel this order?', sale.paid
       ? 'The customer is told on WhatsApp. They paid online: refund them from the Flutterwave dashboard.'
@@ -159,7 +159,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
     <Card style={{ marginBottom: spacing.md, gap: spacing.sm }}>
       <Text style={styles.name}>{sale.customerName ?? 'Unnamed customer'}</Text>
       <View style={styles.badges}>
-        <Badge label={STAGE_LABEL[stage] ?? stage} tone={stage === 'OUT_FOR_DELIVERY' ? 'warning' : 'neutral'} />
+        <Badge label={STAGE_LABEL[stage] ?? stage} tone={stage === 'READY' ? 'warning' : 'neutral'} />
         {sale.paid && <Badge label="Paid online" tone="success" />}
       </View>
       <Text style={styles.detail}>
@@ -168,26 +168,21 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
       {sale.specialAxis && <Badge label="Special axis — check before handing over" tone="warning" />}
       <Text style={styles.price}>{formatKwacha(sale.priceMinor)}</Text>
 
-      {sale.deliveryAddress ? (
-        <View style={styles.deliver}>
-          <Text style={styles.deliverLabel}>Deliver to</Text>
-          <Text style={styles.detail}>{sale.deliveryName ?? sale.customerName ?? '—'}</Text>
-          <Text style={styles.detail}>{sale.deliveryAddress}{sale.deliveryArea ? `, ${sale.deliveryArea}` : ''}</Text>
-          {sale.deliveryLandmark ? <Text style={styles.detail}>Landmark: {sale.deliveryLandmark}</Text> : null}
-        </View>
+      {stage === 'READY' ? (
+        <Text style={styles.hint}>Waiting for the customer (or whoever they send) to collect.</Text>
       ) : null}
 
-      {delivering && <Select value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />}
+      {handover && <Select value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />}
       {error && <Text style={styles.error}>{error}</Text>}
       {next && (
         <Button
           label={busy ? 'Saving…' : NEXT_ACTION[stage]}
           onPress={advance}
-          disabled={delivering && !method}
+          disabled={handover && !method}
           loading={busy}
         />
       )}
-      {delivering && !method && <Text style={styles.hint}>Pick how they paid to close the order.</Text>}
+      {handover && !method && <Text style={styles.hint}>Pick how they paid to close the order.</Text>}
       {next && <Button label="Cancel order" variant="ghost" onPress={cancel} disabled={busy} />}
     </Card>
   )
@@ -200,8 +195,6 @@ const styles = StyleSheet.create({
   detail: { fontFamily: font.regular, fontSize: 13, color: colors.textMuted },
   price: { fontFamily: font.bold, fontSize: 20, color: colors.text },
   error: { fontFamily: font.medium, fontSize: 13, color: colors.danger },
-  deliver: { gap: 2, borderLeftWidth: 3, borderLeftColor: colors.borderStrong, paddingLeft: spacing.sm },
   badges: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   hint: { fontFamily: font.regular, fontSize: 12, color: colors.textMuted },
-  deliverLabel: { fontFamily: font.medium, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.textMuted },
 })
