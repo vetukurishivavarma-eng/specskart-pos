@@ -40,11 +40,17 @@ export default function ProductDetail() {
   const router = useRouter()
   const qc = useQueryClient()
 
+  // `/products/new` falls through the same [id] route -- one form, two verbs, rather than a
+  // second screen that would drift out of step with this one every time a field is added.
+  const creating = id === 'new'
+
   const { data: product, isLoading } = useQuery({
     queryKey: ['catalog-product', id],
     queryFn: async () => (await api.get<AdminProduct>(`/admin/catalog/products/${id}`)).data,
+    enabled: !creating,
   })
 
+  const [name, setName] = useState('')
   const [sku, setSku] = useState('')
   const [barcode, setBarcode] = useState('')
   const [price, setPrice] = useState('')
@@ -65,27 +71,36 @@ export default function ProductDetail() {
     setStatus(product.status)
   }, [product])
 
-  if (isLoading || !product) return <Loading />
+  if (!creating && (isLoading || !product)) return <Loading />
 
   async function save() {
+    if (creating && !name.trim()) {
+      setError('Give the frame a name.')
+      return
+    }
     setBusy(true)
     setError(null)
+    // The fields this screen doesn't show are echoed back untouched on an edit (see the note
+    // on AdminProduct); on a create there is nothing to preserve, and the backend derives the
+    // slug from the name.
+    const body = {
+      name: creating ? name.trim() : product!.name,
+      description: creating ? null : product!.description,
+      frameCategoryCode: creating ? null : product!.frameCategoryCode,
+      material: creating ? null : product!.material,
+      colour: creating ? null : product!.colour,
+      compareAtMinor: creating ? null : product!.compareAtMinor,
+      dropsAt: creating ? null : product!.dropsAt,
+      sku: sku.trim() || null,
+      barcode: barcode.trim() || null,
+      priceMinor: Math.round(Number(price || 0) * 100),
+      costPriceMinor: Math.round(Number(cost || 0) * 100),
+      stockQty: Number(stockQty || 0),
+      status,
+    }
     try {
-      await api.put(`/admin/catalog/products/${id}`, {
-        name: product!.name,
-        description: product!.description,
-        frameCategoryCode: product!.frameCategoryCode,
-        material: product!.material,
-        colour: product!.colour,
-        compareAtMinor: product!.compareAtMinor,
-        dropsAt: product!.dropsAt,
-        sku: sku.trim() || null,
-        barcode: barcode.trim() || null,
-        priceMinor: Math.round(Number(price) * 100),
-        costPriceMinor: Math.round(Number(cost) * 100),
-        stockQty: Number(stockQty),
-        status,
-      })
+      if (creating) await api.post('/admin/catalog/products', body)
+      else await api.put(`/admin/catalog/products/${id}`, body)
       qc.invalidateQueries({ queryKey: ['catalog-product', id] })
       qc.invalidateQueries({ queryKey: ['catalog-products'] })
       router.back()
@@ -98,18 +113,28 @@ export default function ProductDetail() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Title>{product.name}</Title>
-      <Badge label={product.status} tone={product.status === 'ACTIVE' ? 'success' : 'neutral'} />
+      <Title>{creating ? 'New frame' : product!.name}</Title>
+      {creating ? (
+        <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Aviator Classic Gold" />
+      ) : (
+        <Badge label={product!.status} tone={product!.status === 'ACTIVE' ? 'success' : 'neutral'} />
+      )}
 
       <Field label="SKU" value={sku} onChangeText={setSku} autoCapitalize="characters" />
       <Field label="Barcode" value={barcode} onChangeText={setBarcode} />
       <Field label="Price (K)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
       <Field label="Cost price (K)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />
       <Field label="Stock quantity" value={stockQty} onChangeText={setStockQty} keyboardType="number-pad" />
+      {/* Once a shop carries a map pin, the website's count IS that shop's shelf and the
+          backend ignores this field -- see AdminCatalogService.applyProduct. Say so rather
+          than let someone type a number that quietly does nothing. */}
+      <Text style={{ fontFamily: font.regular, fontSize: 12, color: colors.textFaint }}>
+        Stock is counted on the shop&apos;s shelf. Record a delivery or a stock adjustment to change it.
+      </Text>
       <Select label="Status" value={status} options={STATUSES as any} onChange={setStatus} />
 
       {error && <Text style={{ fontFamily: font.medium, color: colors.danger }}>{error}</Text>}
-      <Button label={busy ? 'Saving…' : 'Save'} onPress={save} loading={busy} size="lg" />
+      <Button label={busy ? 'Saving…' : creating ? 'Add frame' : 'Save'} onPress={save} loading={busy} size="lg" />
     </ScrollView>
   )
 }

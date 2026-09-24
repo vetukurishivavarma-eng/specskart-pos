@@ -136,7 +136,14 @@ export type ReorderLine = {
 
 export type StaffDetail = { id: string; name: string; email: string; role: string; active: boolean; storeId: string | null }
 
-export type VersionInfo = { version: string; buildNumber: number; minimumBuild: number; downloadUrl: string; notes: string; mandatory: boolean }
+/** Mirrors AppVersionController.VersionInfo. `updateAvailable`/`graceCount` arrived with
+ *  build 8; a server older than that omits them, which reads as "no update", so an app talking
+ *  to a stale backend simply stays quiet. */
+export type VersionInfo = {
+  version: string; buildNumber: number; minimumBuild: number; downloadUrl: string
+  notes: string; mandatory: boolean
+  updateAvailable: boolean; graceCount: number
+}
 
 export type StoreView = {
   id: string; name: string; code: string; city: string; active: boolean

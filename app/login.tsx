@@ -1,7 +1,7 @@
 import Constants from 'expo-constants'
 import { StatusBar } from 'expo-status-bar'
 import { Platform } from 'react-native'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -10,8 +10,15 @@ import { useActiveStore } from '../src/lib/activeStore'
 import { useAuth } from '../src/lib/auth'
 import { deviceName, getDeviceId } from '../src/lib/device'
 import { bevel, colors, font, radius, shadow, spacing } from '../src/theme'
-import { Button, Icon } from '../src/ui/components'
+import { Button, Icon, Toggle } from '../src/ui/components'
 import { Logo } from '../src/ui/Logo'
+import {
+  forgetAccount,
+  initials,
+  listRememberedAccounts,
+  rememberAccount,
+  type RememberedAccount,
+} from '../src/store/rememberedAccounts'
 
 export default function Login() {
   const router = useRouter()
@@ -22,9 +29,29 @@ export default function Login() {
   const [focused, setFocused] = useState<'email' | 'password' | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [remembered, setRemembered] = useState<RememberedAccount[]>([])
+  const [rememberMe, setRememberMe] = useState(false)
+  // 'pick' only while there is something to pick; the form is always one tap away.
+  const [mode, setMode] = useState<'pick' | 'form'>('form')
 
-  async function submit() {
-    if (!email.trim() || !password) {
+  useEffect(() => {
+    void listRememberedAccounts().then((accounts) => {
+      setRemembered(accounts)
+      if (accounts.length > 0) setMode('pick')
+    })
+  }, [])
+
+  async function forgetOne(account: RememberedAccount) {
+    await forgetAccount(account.email)
+    const left = await listRememberedAccounts()
+    setRemembered(left)
+    if (left.length === 0) setMode('form')
+  }
+
+  async function submit(saved?: RememberedAccount) {
+    const useEmail = (saved?.email ?? email).trim()
+    const usePassword = saved?.password ?? password
+    if (!useEmail || !usePassword) {
       setError('Enter your email and password.')
       return
     }
@@ -33,8 +60,8 @@ export default function Login() {
     try {
       const deviceId = await getDeviceId()
       const { data } = await api.post('/auth/login', {
-        email: email.trim(),
-        password,
+        email: useEmail,
+        password: usePassword,
         deviceId,
         deviceName: deviceName(),
         platform: Platform.OS,
@@ -52,8 +79,23 @@ export default function Login() {
           await useActiveStore.getState().select(store.data)
         } catch { /* non-fatal -- they can still pick it manually */ }
       }
+      if (saved || rememberMe) {
+        await rememberAccount({
+          email: useEmail, password: usePassword, name: data.fullName, role: data.role,
+        })
+      }
     } catch (e) {
       setError(apiError(e))
+      // A saved login the server actually rejected -- password changed, account deactivated --
+      // is dead weight and a trap. Drop it so nobody keeps tapping it, and put them on the form
+      // with the address already filled in.
+      if (saved) {
+        await forgetOne(saved)
+        setEmail(saved.email)
+        setPassword('')
+        setMode('form')
+        setError('That saved login no longer works — sign in again to update it.')
+      }
     } finally {
       setBusy(false)
     }
@@ -74,12 +116,53 @@ export default function Login() {
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.brand}>
               <View style={styles.mark}>
-                <Logo size={56} color={colors.accent} />
+                <Logo size={56} color={colors.accent} accent={colors.onDark} />
               </View>
               <Text style={styles.wordmark}>Specskart POS</Text>
               <Text style={styles.tagline}>Lens pricing &amp; counter sales</Text>
             </View>
 
+            {mode === 'pick' ? (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Choose your login</Text>
+                <Text style={styles.cardHint}>Tap your name to sign in on this device</Text>
+
+                {error && (
+                  <View style={styles.errorBox}>
+                    <Icon name="alert-circle" size={15} color={colors.danger} />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                )}
+
+                <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+                  {remembered.map((account) => (
+                    <View key={account.email} style={styles.acctRow}>
+                      <Pressable style={styles.acctMain} onPress={() => void submit(account)} disabled={busy}>
+                        <View style={styles.acctAvatar}>
+                          <Text style={styles.acctInitials}>{initials(account.name || account.email)}</Text>
+                        </View>
+                        <View style={styles.flex}>
+                          <Text style={styles.acctName} numberOfLines={1}>{account.name || account.email}</Text>
+                          <Text style={styles.acctMeta} numberOfLines={1}>{account.email}</Text>
+                        </View>
+                        {busy ? null : <Icon name="chevron-right" size={18} color={colors.textFaint} />}
+                      </Pressable>
+                      <Pressable onPress={() => void forgetOne(account)} hitSlop={10} disabled={busy} style={styles.acctForget}>
+                        <Icon name="x" size={16} color={colors.textFaint} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+
+                <Pressable
+                  onPress={() => { setMode('form'); setError(null) }}
+                  hitSlop={10}
+                  style={{ marginTop: spacing.lg, alignSelf: 'center' }}
+                >
+                  <Text style={styles.forgotLink}>Use a different account</Text>
+                </Pressable>
+              </View>
+            ) : (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Welcome back</Text>
               <Text style={styles.cardHint}>Sign in to open the till</Text>
@@ -116,7 +199,7 @@ export default function Login() {
                   autoCapitalize="none"
                   style={styles.input}
                   editable={!busy}
-                  onSubmitEditing={submit}
+                  onSubmitEditing={() => void submit()}
                   returnKeyType="go"
                 />
                 <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={10}>
@@ -131,11 +214,25 @@ export default function Login() {
                 </View>
               )}
 
-              <Button label="Sign In" size="lg" onPress={submit} loading={busy} style={{ marginTop: spacing.lg }} />
+              <View style={{ marginTop: spacing.md }}>
+                <Toggle
+                  label="Remember this login on this device"
+                  value={rememberMe}
+                  onChange={setRememberMe}
+                />
+              </View>
+
+              <Button label="Sign In" size="lg" onPress={() => void submit()} loading={busy} style={{ marginTop: spacing.lg }} />
               <Pressable onPress={() => router.push('/forgot-password')} hitSlop={10} style={{ marginTop: spacing.md, alignSelf: 'center' }}>
                 <Text style={styles.forgotLink}>Forgot password?</Text>
               </Pressable>
+              {remembered.length > 0 && (
+                <Pressable onPress={() => { setMode('pick'); setError(null) }} hitSlop={10} style={{ marginTop: spacing.sm, alignSelf: 'center' }}>
+                  <Text style={styles.forgotLink}>Back to saved logins</Text>
+                </Pressable>
+              )}
             </View>
+            )}
 
             <Text style={styles.footnote}>Specskart</Text>
           </ScrollView>
@@ -146,6 +243,19 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  acctRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  acctMain: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.canvas, borderRadius: radius.md, padding: spacing.md,
+  },
+  acctAvatar: {
+    width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
+  },
+  acctInitials: { fontFamily: font.bold, fontSize: 14, color: colors.accentDeep },
+  acctName: { fontFamily: font.bold, fontSize: 15, color: colors.text },
+  acctMeta: { fontFamily: font.regular, fontSize: 12, color: colors.textMuted },
+  acctForget: { padding: spacing.sm },
   root: { flex: 1, backgroundColor: colors.primaryDeep },
   flex: { flex: 1 },
   washTop: { position: 'absolute', top: 0, left: 0, right: 0, height: '58%', backgroundColor: colors.primaryDeep },

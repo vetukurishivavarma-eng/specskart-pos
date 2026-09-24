@@ -144,7 +144,6 @@ export default function RootLayout() {
             <Stack.Screen name="forgot-password" options={{ headerShown: true, title: 'Forgot password' }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="orders" options={{ headerShown: true, title: 'Web orders' }} />
-            <Stack.Screen name="deliveries" options={{ headerShown: true, title: 'Deliveries' }} />
             <Stack.Screen name="walk-in" options={{ headerShown: true, title: 'Add customer' }} />
             <Stack.Screen name="pricing" options={{ headerShown: true, title: 'Lens pricing' }} />
             <Stack.Screen name="devices" options={{ headerShown: true, title: 'My devices' }} />
@@ -152,8 +151,6 @@ export default function RootLayout() {
             <Stack.Screen name="purchases/index" options={{ headerShown: true, title: 'Supplier invoices' }} />
             <Stack.Screen name="purchases/new" options={{ headerShown: true, title: 'Record a delivery' }} />
             <Stack.Screen name="purchases/[id]" options={{ headerShown: true, title: 'Invoice' }} />
-            <Stack.Screen name="transfers/index" options={{ headerShown: true, title: 'Transfers' }} />
-            <Stack.Screen name="transfers/new" options={{ headerShown: true, title: 'New transfer' }} />
             <Stack.Screen name="users/index" options={{ headerShown: true, title: 'Staff' }} />
             <Stack.Screen name="users/[id]" options={{ headerShown: true, title: 'Staff member' }} />
             <Stack.Screen name="day-report" options={{ headerShown: true, title: 'Day report' }} />
@@ -171,7 +168,6 @@ export default function RootLayout() {
             <Stack.Screen name="reminder" options={{ headerShown: true, title: 'Day-close reminder' }} />
             <Stack.Screen name="products/index" options={{ headerShown: true, title: 'Products' }} />
             <Stack.Screen name="products/[id]" options={{ headerShown: true, title: 'Product' }} />
-            <Stack.Screen name="shop-day-report" options={{ headerShown: true, title: 'Day report by shop' }} />
             <Stack.Screen name="printer" options={{ headerShown: true, title: 'Printing' }} />
             <Stack.Screen name="history" options={{ headerShown: true, title: 'History' }} />
             <Stack.Screen

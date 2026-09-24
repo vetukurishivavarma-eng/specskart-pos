@@ -7,11 +7,16 @@
  */
 
 export const colors = {
-  // Ink — primary actions, active state (Specskart's near-black, not NG POS's green).
-  primary: '#14110f',
+  // Clay — primary actions and active state. This was near-black ink until the accent was
+  // promoted: a till full of black buttons read as a form to fill in rather than a thing to
+  // use, and the brand already owned a warmer colour that was being spent on almost nothing.
+  // Text stays ink (see `text`/`ink` below) — only the things you press are clay.
+  primary: '#b4552d',
+  // The dark wash behind the login and lock screens. Deliberately still near-black: it is a
+  // backdrop, not an action, and a full-bleed terracotta field is a lot of colour.
   primaryDeep: '#0a0908',
   primaryBright: '#2a2622',
-  primarySoft: '#e9e7e4',
+  primarySoft: '#f5e3da',
 
   // Clay — the accent. Used sparingly: totals, highlights, warnings.
   accent: '#b4552d',

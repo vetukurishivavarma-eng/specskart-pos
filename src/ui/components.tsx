@@ -311,7 +311,7 @@ export function Toggle({
       value={value}
       onValueChange={onChange}
       disabled={disabled}
-      trackColor={{ false: colors.borderStrong, true: colors.primaryBright }}
+      trackColor={{ false: colors.borderStrong, true: colors.primary }}
       thumbColor={colors.surface}
     />
   );
@@ -512,6 +512,7 @@ export function ListRow({
   trailing,
   onPress,
   tone = 'default',
+  tint,
 }: {
   icon?: IconName;
   title: string;
@@ -519,12 +520,15 @@ export function ListRow({
   trailing?: React.ReactNode;
   onPress?: () => void;
   tone?: 'default' | 'muted';
+  /** Colours this row's icon tile, so a long menu reads as sections at a glance rather than
+   *  one grey column. Defaults to the primary clay. */
+  tint?: string;
 }) {
   const body = (
     <>
       {icon ? (
-        <View style={styles.rowIcon}>
-          <Icon name={icon} size={17} color={colors.primary} />
+        <View style={[styles.rowIcon, tint ? { backgroundColor: tint + '1f' } : null]}>
+          <Icon name={icon} size={17} color={tint ?? colors.primary} />
         </View>
       ) : null}
       <View style={{ flex: 1 }}>

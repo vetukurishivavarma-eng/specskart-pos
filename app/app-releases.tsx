@@ -14,6 +14,7 @@ type Release = {
   downloadUrl: string
   notes: string
   mandatory: boolean
+  graceCount: number
 }
 
 export default function AppReleases() {
@@ -24,6 +25,7 @@ export default function AppReleases() {
   const [downloadUrl, setDownloadUrl] = useState('')
   const [notes, setNotes] = useState('')
   const [mandatory, setMandatory] = useState(false)
+  const [graceCount, setGraceCount] = useState('2')
 
   const { data } = useQuery({
     queryKey: ['app-releases'],
@@ -40,8 +42,10 @@ export default function AppReleases() {
       downloadUrl: downloadUrl.trim(),
       notes: notes.trim(),
       mandatory,
+      graceCount: Number(graceCount || 0),
     })
-    setVersion(''); setBuildNumber(''); setMinimumBuild(''); setDownloadUrl(''); setNotes(''); setMandatory(false)
+    setVersion(''); setBuildNumber(''); setMinimumBuild(''); setDownloadUrl(''); setNotes('')
+    setMandatory(false); setGraceCount('2')
     qc.invalidateQueries({ queryKey: ['app-releases'] })
   }
 
@@ -60,6 +64,12 @@ export default function AppReleases() {
             <Field label="Minimum build to still allow" value={minimumBuild} onChangeText={setMinimumBuild} keyboardType="number-pad" />
             <Field label="Download URL (GitHub release APK)" value={downloadUrl} onChangeText={setDownloadUrl} autoCapitalize="none" />
             <Field label="Notes" value={notes} onChangeText={setNotes} />
+            <Field
+              label={'Times staff may tap "Later"'}
+              value={graceCount}
+              onChangeText={setGraceCount}
+              keyboardType="number-pad"
+            />
             <Toggle label="Mandatory (blocks older builds)" value={mandatory} onChange={setMandatory} />
             <Button label="Publish" onPress={publish} disabled={!version.trim() || !buildNumber || !downloadUrl.trim()} />
           </Card>
@@ -69,7 +79,7 @@ export default function AppReleases() {
         <ListRow
           icon="download"
           title={`v${item.version} · build ${item.buildNumber}`}
-          subtitle={`Minimum build ${item.minimumBuild}${item.notes ? ` · ${item.notes}` : ''}`}
+          subtitle={`Minimum build ${item.minimumBuild} · ${item.graceCount} postponement(s)${item.notes ? ` · ${item.notes}` : ''}`}
           trailing={item.mandatory ? <Badge label="Mandatory" tone="danger" /> : null}
         />
       )}

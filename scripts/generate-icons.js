@@ -16,11 +16,9 @@ function markSvg({ box, markColor, bgColor, scale = 1, translate = [0, 0] }) {
     <svg width="${box}" height="${box}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
       ${bgColor ? `<rect width="48" height="48" fill="${bgColor}"/>` : ''}
       <g transform="translate(${24 + tx}, ${24 + ty}) scale(${scale}) translate(-24, -24)">
-        <path d="M4 20a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6h-6a6 6 0 0 1-6-6z"
-              stroke="${markColor}" stroke-width="3.4" fill="none"/>
-        <path d="M26 20a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6h-6a6 6 0 0 1-6-6z"
-              stroke="${markColor}" stroke-width="3.4" fill="none"/>
-        <path d="M22 19.5 L26 28.5" stroke="${markColor}" stroke-width="3.4" stroke-linecap="round"/>
+        <rect x="4" y="16" width="15" height="15" rx="5.5" fill="none" stroke="${markColor}" stroke-width="4.2"/>
+        <rect x="29" y="16" width="15" height="15" rx="5.5" fill="none" stroke="${markColor}" stroke-width="4.2" opacity="0.5"/>
+        <path d="M20.5 20.5 L27.5 27" stroke="${markColor}" stroke-width="4.2" stroke-linecap="round"/>
       </g>
     </svg>
   `;
@@ -31,7 +29,7 @@ async function main() {
 
   // App icon: ink mark on bone, full bleed. The outer <svg viewBox="0 0 48 48"> already maps
   // 48 units to `box` px, so scale here is just extra padding control, not the base mapping.
-  await sharp(Buffer.from(markSvg({ box: 1024, markColor: INK, bgColor: BONE, scale: 1 })))
+  await sharp(Buffer.from(markSvg({ box: 1024, markColor: CLAY, bgColor: BONE, scale: 1 })))
     .png()
     .toFile(path.join(assets, 'icon.png'));
 

@@ -5,7 +5,7 @@ import { FlatList, TextInput, View } from 'react-native'
 import { api } from '../../src/lib/api'
 import { FrameProduct } from '../../src/lib/pos'
 import { colors, font, formatKwacha, radius, spacing } from '../../src/theme'
-import { EmptyState, ListRow, Loading, RowDivider, Title } from '../../src/ui/components'
+import { Button, EmptyState, ListRow, Loading, RowDivider, Title } from '../../src/ui/components'
 
 export default function Products() {
   const router = useRouter()
@@ -34,6 +34,12 @@ export default function Products() {
       ListHeaderComponent={
         <View style={{ marginBottom: spacing.md }}>
           <Title style={{ marginBottom: spacing.md }}>Products</Title>
+          <Button
+            label="Add a frame"
+            icon="plus"
+            onPress={() => router.push('/products/new')}
+            style={{ marginBottom: spacing.md }}
+          />
           <View style={{
             flexDirection: 'row', alignItems: 'center', height: 48, borderWidth: 1.5,
             borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, backgroundColor: colors.canvas,
