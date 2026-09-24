@@ -4,6 +4,7 @@ import { FlatList, View } from 'react-native'
 import { api, apiError } from '../src/lib/api'
 import { StoreView } from '../src/lib/pos'
 import { spacing } from '../src/theme'
+import { Alert } from 'react-native'
 import { Badge, Button, Card, Field, ListRow, RowDivider, Title, Toggle } from '../src/ui/components'
 
 export default function Shops() {
@@ -14,6 +15,7 @@ export default function Shops() {
   const [city, setCity] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
   const [location, setLocation] = useState('')
+  const [address, setAddress] = useState('')
   const [error, setError] = useState('')
 
   const { data } = useQuery({
@@ -31,13 +33,33 @@ export default function Shops() {
 
   async function saveLocation(s: StoreView) {
     try {
-      await api.put(`/admin/pos/stores/${s.id}`, { location: location.trim() })
+      await api.put(`/admin/pos/stores/${s.id}`, { location: location.trim(), address: address.trim() })
       setEditing(null)
       setError('')
       qc.invalidateQueries({ queryKey: ['pos-stores-admin'] })
     } catch (e) {
       setError(apiError(e))
     }
+  }
+
+  // Only ever allowed for a shop that never traded -- the backend refuses the rest and says why.
+  function confirmDelete(s: StoreView) {
+    Alert.alert('Delete this shop?', `"${s.name}" is removed for good. A shop that has sold anything cannot be deleted \u2014 switch it off instead.`, [
+      { text: 'Keep it', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await api.delete(`/admin/pos/stores/${s.id}`)
+            setEditing(null)
+            setError('')
+            qc.invalidateQueries({ queryKey: ['pos-stores-admin'] })
+            qc.invalidateQueries({ queryKey: ['pos-stores'] })
+          } catch (e) {
+            setError(apiError(e))
+          }
+        },
+      },
+    ])
   }
 
   async function toggleActive(s: StoreView) {
@@ -76,6 +98,7 @@ export default function Shops() {
           onPress={() => {
             setEditing(editing === item.id ? null : item.id)
             setLocation(item.latitude != null ? `${item.latitude}, ${item.longitude}` : '')
+            setAddress(item.address ?? '')
             setError('')
           }}
           trailing={
@@ -96,7 +119,15 @@ export default function Shops() {
               hint="Google Maps: long-press the shop, copy the numbers. Empty = this shop stops shipping online orders."
               error={error || undefined}
             />
-            <Button label="Save location" onPress={() => saveLocation(item)} />
+            <Field
+              label="Street address"
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Shop 4, Manda Hill Mall, Great East Road"
+              hint="Sent to the customer on WhatsApp when their lenses are ready to collect."
+            />
+            <Button label="Save" onPress={() => saveLocation(item)} />
+            <Button label="Delete shop" variant="ghost" onPress={() => confirmDelete(item)} />
           </Card>
         )}
         </View>

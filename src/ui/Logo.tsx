@@ -1,19 +1,19 @@
-import Svg, { Path, Rect } from 'react-native-svg'
+import Svg, { Circle, Path } from 'react-native-svg'
 
 /**
  * Specskart's mark — original geometric artwork drawn for this app, not copied or traced from
- * anywhere. Two lens shapes on a bridge, with the bridge cut on a diagonal so it doubles as a
- * monogram "S" stroke running through the mark.
+ * anywhere. Two round lenses, a bridge seated between the rims, and a hinge stub on each side.
  *
- * Redrawn as solid two-tone: the thin 3.4px outline read as grey mush below about 40px, which
- * is exactly the size it appears at in the header and the launcher icon. Filled shapes hold
- * their shape at any size, and the right lens carrying a lighter tone keeps the two from
- * merging into one blob the way two identical filled rectangles would.
+ * Round, not squircles: a rounded rectangle at icon size reads as a button, and two side by
+ * side read as two buttons. The bridge sits *between* the rims and rises over them, the way a
+ * real frame does — an earlier version ran a diagonal straight through both lenses, which read
+ * as a slash cancelling them out rather than as eyewear.
  *
- * @param color the dominant tone — left lens and bridge.
- * @param accent the second tone for the right lens. Defaults to `color` at 45%, which works on
- *               any background without the caller having to pick a matching pair; pass one
- *               explicitly where the brand's own terracotta is wanted.
+ * Keep in step with scripts/mark-svg.js, which draws the same thing for the launcher icons.
+ *
+ * @param color the dominant tone — left lens, bridge, left hinge.
+ * @param accent the second tone for the right side. Defaults to `color` at 55%, which works on
+ *               any background without the caller having to pick a matching pair.
  */
 export function Logo({
   size = 40,
@@ -24,23 +24,23 @@ export function Logo({
   color?: string
   accent?: string
 }) {
+  const second = accent ?? color
+  const secondOpacity = accent ? 1 : 0.55
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      {/* Left lens */}
-      <Rect x={4} y={16} width={15} height={15} rx={5.5} stroke={color} strokeWidth={4.2} />
-      {/* Right lens — the second tone, so the pair reads as two and not one wide bar. */}
-      <Rect
-        x={29}
-        y={16}
-        width={15}
-        height={15}
-        rx={5.5}
-        stroke={accent ?? color}
-        strokeWidth={4.2}
-        opacity={accent ? 1 : 0.5}
+      <Circle cx={14} cy={25} r={8} stroke={color} strokeWidth={3.6} />
+      <Circle cx={34} cy={25} r={8} stroke={second} strokeWidth={3.6} opacity={secondOpacity} />
+      {/* Bridge — spans rim to rim (22 → 26) and arcs above them. */}
+      <Path d="M22 22.5 Q24 18.4 26 22.5" stroke={color} strokeWidth={3.6} strokeLinecap="round" />
+      {/* Hinges, so the mark reads as a frame rather than two circles. */}
+      <Path d="M6 22.6 L2.6 20.2" stroke={color} strokeWidth={3.6} strokeLinecap="round" />
+      <Path
+        d="M42 22.6 L45.4 20.2"
+        stroke={second}
+        strokeWidth={3.6}
+        strokeLinecap="round"
+        opacity={secondOpacity}
       />
-      {/* Bridge: the diagonal that doubles as the monogram's S stroke. */}
-      <Path d="M20.5 20.5 L27.5 27" stroke={color} strokeWidth={4.2} strokeLinecap="round" />
     </Svg>
   )
 }

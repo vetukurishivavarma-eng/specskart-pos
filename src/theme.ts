@@ -21,15 +21,24 @@ export const colors = {
   // Clay — the accent. Used sparingly: totals, highlights, warnings.
   accent: '#b4552d',
   accentDeep: '#8f4223',
-  accentSoft: '#f5e3da',
+  accentBright: '#d4724a',
+  accentSoft: '#f7e8e0',
+
+  // A cool counterweight. Everything in this palette was warm, which is what made the screens
+  // read as one undifferentiated wash -- a second family is what makes the warm colours look
+  // chosen rather than default.
+  cool: '#2f4858',
+  coolSoft: '#e4ebf0',
 
   /** The card the wordmark sits on, and the adaptive icon's background. */
   brandCard: '#f6f3ee',
 
-  // Bone paper neutrals.
-  canvas: '#f6f3ee',
+  // Bone paper neutrals. The canvas is a touch deeper than it was so a white card actually
+  // separates from it -- at #f6f3ee against #FFFFFF the two were nearly the same value and
+  // every screen read as one flat sheet.
+  canvas: '#f2eee7',
   surface: '#FFFFFF',
-  surfaceSunken: '#ece8e1',
+  surfaceSunken: '#e7e2d9',
   border: '#e2ddd3',
   borderStrong: '#cec6b7',
 

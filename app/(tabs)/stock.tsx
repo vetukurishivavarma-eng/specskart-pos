@@ -6,12 +6,22 @@ import { api } from '../../src/lib/api'
 import { useActiveStore } from '../../src/lib/activeStore'
 import { InventoryRow } from '../../src/lib/pos'
 import { colors, font, formatKwacha, radius, spacing } from '../../src/theme'
-import { Badge, Button, Card, EmptyState, Loading, Title } from '../../src/ui/components'
+import { Badge, Button, Card, EmptyState, Loading, Select, Title } from '../../src/ui/components'
+
+// Lens blanks live in the same product table as frames (kind LENS), so without this the
+// only way to reach them is to scroll a list of every frame in the shop.
+const KINDS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'FRAME', label: 'Frames' },
+  { value: 'LENS', label: 'Lenses' },
+] as const
 
 export default function Stock() {
   const router = useRouter()
   const store = useActiveStore((s) => s.store)
   const qc = useQueryClient()
+  const [kind, setKind] = useState<string>('ALL')
+  const [query, setQuery] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['pos-inventory', store?.id],
@@ -27,18 +37,38 @@ export default function Stock() {
   }
   if (isLoading) return <Loading />
 
-  const lowStock = (data ?? []).filter((r) => r.quantity <= r.reorderLevel).length
+  const q = query.trim().toLowerCase()
+  const rows = (data ?? [])
+    .filter((r) => kind === 'ALL' || (r.kind ?? 'FRAME') === kind)
+    .filter((r) => !q || r.productName.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q))
+  const lowStock = rows.filter((r) => r.quantity <= r.reorderLevel).length
 
   return (
     <FlatList
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
-      data={data}
+      data={rows}
       keyExtractor={(r) => r.productId}
       ListHeaderComponent={
-        <View style={{ marginBottom: spacing.md }}>
+        <View style={{ marginBottom: spacing.md, gap: spacing.sm }}>
           <Title>Stock — {store.name}</Title>
+          <Select value={kind} options={KINDS as any} onChange={setKind} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by name or SKU"
+            placeholderTextColor={colors.textFaint}
+            style={{
+              height: 44, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md,
+              paddingHorizontal: spacing.md, fontFamily: font.medium, fontSize: 15, color: colors.text,
+              backgroundColor: colors.canvas,
+            }}
+          />
           {lowStock > 0 && <Badge label={`${lowStock} item(s) low or out of stock`} tone="warning" />}
         </View>
+      }
+      ListEmptyComponent={
+        <EmptyState icon="package" title="Nothing here"
+          hint={kind === 'LENS' ? 'Lens blanks appear once they exist in the catalogue.' : 'Try a different filter.'} />
       }
       renderItem={({ item }) => (
         <Row

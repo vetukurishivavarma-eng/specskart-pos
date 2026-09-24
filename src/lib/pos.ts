@@ -1,5 +1,7 @@
 // Mirrors com.specskart.pos.PosDtos on the backend.
 export type InventoryRow = {
+  /** FRAME or LENS — lens blanks are counted here too, and staff need to find them. */
+  kind: string
   productId: string
   productName: string
   sku: string
@@ -146,6 +148,8 @@ export type VersionInfo = {
 }
 
 export type StoreView = {
+  /** Street address, read out to a customer coming to collect. */
+  address: string | null
   id: string; name: string; code: string; city: string; active: boolean
   // map pin — set = this shop's stock sells online and it ships the nearest web orders
   latitude: number | null; longitude: number | null
