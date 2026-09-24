@@ -11,26 +11,10 @@
 // dependency on Expo's pipeline working correctly in whatever environment CI happens to run.
 const sharp = require('sharp');
 const path = require('path');
+const { markSvg, BONE, INK, CLAY } = require('./mark-svg');
 const fs = require('fs');
 
-const BONE = '#f6f3ee';
-const INK = '#14110f';
-const CLAY = '#b4552d';
 
-function markSvg({ box, markColor, bgColor, scale = 1 }) {
-  return `
-    <svg width="${box}" height="${box}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-      ${bgColor ? `<rect width="48" height="48" fill="${bgColor}"/>` : ''}
-      <g transform="translate(24, 24) scale(${scale}) translate(-24, -24)">
-        <path d="M4 20a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6h-6a6 6 0 0 1-6-6z"
-              stroke="${markColor}" stroke-width="3.4" fill="none"/>
-        <path d="M26 20a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6h-6a6 6 0 0 1-6-6z"
-              stroke="${markColor}" stroke-width="3.4" fill="none"/>
-        <path d="M22 19.5 L26 28.5" stroke="${markColor}" stroke-width="3.4" stroke-linecap="round"/>
-      </g>
-    </svg>
-  `;
-}
 
 // Legacy launcher icon (and round variant, reused as-is -- same square mark, no separate
 // circle crop) is full-bleed at these sizes. Adaptive foreground sits in a 108dp canvas
@@ -51,7 +35,7 @@ async function main() {
     const dir = path.join(outRoot, density);
     fs.mkdirSync(dir, { recursive: true });
 
-    const legacy = sharp(Buffer.from(markSvg({ box: sizes.legacy, markColor: INK, bgColor: BONE, scale: 1 }))).png();
+    const legacy = sharp(Buffer.from(markSvg({ box: sizes.legacy, markColor: CLAY, bgColor: BONE, scale: 1 }))).png();
     await legacy.clone().toFile(path.join(dir, 'ic_launcher.png'));
     await legacy.clone().toFile(path.join(dir, 'ic_launcher_round.png'));
 
