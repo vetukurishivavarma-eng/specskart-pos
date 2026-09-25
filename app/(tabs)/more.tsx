@@ -34,8 +34,12 @@ export default function More() {
         <SectionLabel>Customers</SectionLabel>
         <Card>
           <ListRow tint={SECTION.customers} icon="user-plus" title="Add walk-in customer" subtitle="Verify their WhatsApp & sign them up for offers" onPress={() => router.push('/walk-in')} />
-          <RowDivider />
-          <ListRow tint={SECTION.customers} icon="users" title="Leads" subtitle="Every lead, their number & where they came from" onPress={() => router.push('/leads')} />
+          {user?.role === 'ADMIN' && (
+            <>
+              <RowDivider />
+              <ListRow tint={SECTION.customers} icon="users" title="Leads" subtitle="Every lead, their number & where they came from" onPress={() => router.push('/leads')} />
+            </>
+          )}
         </Card>
       </View>
 
