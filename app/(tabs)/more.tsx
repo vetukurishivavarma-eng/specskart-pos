@@ -38,6 +38,8 @@ export default function More() {
             <>
               <RowDivider />
               <ListRow tint={SECTION.customers} icon="users" title="Leads" subtitle="Every lead, their number & where they came from" onPress={() => router.push('/leads')} />
+              <RowDivider />
+              <ListRow tint={SECTION.customers} icon="help-circle" title="WhatsApp FAQs" subtitle="Questions & answers customers see in the chat" onPress={() => router.push('/faqs')} />
             </>
           )}
         </Card>
