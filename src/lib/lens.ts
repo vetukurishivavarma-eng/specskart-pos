@@ -17,4 +17,12 @@ export type SaleView = {
   fulfilment: 'ORDERED' | 'READY' | 'DELIVERED' | null
   paid: boolean
   createdAt: string
+  // the order itself -- staff never depend on the WhatsApp alert reaching them
+  waId: string | null
+  leadId: string | null
+  age: number | null
+  gender: string | null
+  sphRight: number | null; cylRight: number | null; axisRight: number | null
+  sphLeft: number | null; cylLeft: number | null; axisLeft: number | null
+  addPower: number | null
 }

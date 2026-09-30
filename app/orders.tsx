@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native'
+import { useRouter } from 'expo-router'
+import { Alert, FlatList, Linking, StyleSheet, Text, View } from 'react-native'
+import { RxTable } from '../src/components/RxTable'
 import { api, apiError } from '../src/lib/api'
 import { useAuth } from '../src/lib/auth'
 import { useLinkedRow } from '../src/lib/deepLink'
@@ -105,6 +107,7 @@ export default function Orders() {
 
 function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
   const user = useAuth((s) => s.user)
+  const router = useRouter()
   const [method, setMethod] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -165,8 +168,22 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
       <Text style={styles.detail}>
         {sale.lensType}{sale.blueBlock ? ' + blue block' : ''}{sale.lensStructure ? ` + ${sale.lensStructure.toLowerCase()}` : ''}
       </Text>
+      {(sale.age || sale.gender) && (
+        <Text style={styles.detail}>{[sale.age && `${sale.age} yrs`, sale.gender].filter(Boolean).join(' · ')}</Text>
+      )}
+      <RxTable rx={sale} />
       {sale.specialAxis && <Badge label="Special axis — check before handing over" tone="warning" />}
       <Text style={styles.price}>{formatKwacha(sale.priceMinor)}</Text>
+      <View style={styles.tabs}>
+        {sale.waId && (
+          <Button label="WhatsApp" icon="message-circle" variant="secondary" style={{ flex: 1 }}
+            onPress={() => Linking.openURL(`https://wa.me/${sale.waId}`)} />
+        )}
+        {sale.leadId && user?.role === 'ADMIN' && (
+          <Button label="Lead history" icon="clock" variant="secondary" style={{ flex: 1 }}
+            onPress={() => router.push(`/lead/${sale.leadId}`)} />
+        )}
+      </View>
 
       {stage === 'READY' ? (
         <Text style={styles.hint}>Waiting for the customer (or whoever they send) to collect.</Text>

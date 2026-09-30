@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { FlatList, Linking, Text, TextInput, View } from 'react-native'
+import { useRouter } from 'expo-router'
+import { FlatList, Text, TextInput, View } from 'react-native'
 import { api } from '../src/lib/api'
 import { colors, font, radius, spacing } from '../src/theme'
 import { Badge, Card, EmptyState, ListRow, Loading, Select, Title } from '../src/ui/components'
@@ -28,12 +29,14 @@ type Lead = {
   campaignName: string | null
   status: string
   createdAt: string
+  stage: string | null // where they got to in the lens funnel (latest web order)
 }
 type Page = { content: Lead[]; page: number; totalPages: number; totalElements: number }
 
 const PAGE_SIZE = 50
 
 export default function Leads() {
+  const router = useRouter()
   const [source, setSource] = useState<string>('')
   const [query, setQuery] = useState('')
   const q = query.trim()
@@ -83,10 +86,10 @@ export default function Leads() {
           <ListRow
             icon="user"
             title={item.name || 'Unknown'}
-            subtitle={`+${item.whatsappNumber.replace(/\D/g, '')} · ${new Date(item.createdAt).toLocaleDateString()}${item.campaignName ? ` · ${item.campaignName}` : ''}`}
+            subtitle={`${item.stage ?? 'No lens order yet'} · +${item.whatsappNumber.replace(/\D/g, '')} · ${new Date(item.createdAt).toLocaleDateString()}${item.campaignName ? ` · ${item.campaignName}` : ''}`}
             trailing={<Badge label={SOURCE_LABEL[item.source] ?? item.source} tone="accent" />}
-            // The number is a verified WhatsApp one, so that is where staff will want to reach them.
-            onPress={() => Linking.openURL(`https://wa.me/${item.whatsappNumber.replace(/\D/g, '')}`)}
+            // Their whole story first (steps, Rx, chat, notes); WhatsApp / call are one tap from there.
+            onPress={() => router.push(`/lead/${item.id}`)}
           />
         </Card>
       )}
