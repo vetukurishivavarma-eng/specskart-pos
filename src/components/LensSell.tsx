@@ -1,7 +1,7 @@
 import * as Crypto from 'expo-crypto'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Text } from 'react-native'
+import { Text, View } from 'react-native'
 import { api, apiError } from '../lib/api'
 import { useActiveStore } from '../lib/activeStore'
 import { useAuth } from '../lib/auth'
@@ -25,7 +25,7 @@ const PAYMENT_METHODS = [
 ] as const
 
 /** Counter sale for the lens funnel — no WhatsApp step, staff enter lens type/blue-block/
- *  add-on directly. One pair of lens blanks comes off this shop's shelf (backend V45); with
+ *  add-on and the Rx powers the client's price list is banded on (SPH / CYL / Add). One pair of lens blanks comes off this shop's shelf (backend V45); with
  *  none left the sale still goes through, flagged as a backorder. */
 export default function LensSell() {
   const router = useRouter()
@@ -37,12 +37,17 @@ export default function LensSell() {
   const [lensType, setLensType] = useState<string>('CLEAR')
   const [blueBlock, setBlueBlock] = useState(false)
   const [structure, setStructure] = useState('')
+  const [sphR, setSphR] = useState('')
+  const [sphL, setSphL] = useState('')
+  const [cylR, setCylR] = useState('')
+  const [cylL, setCylL] = useState('')
+  const [add, setAdd] = useState('')
   const [method, setMethod] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [queuedOffline, setQueuedOffline] = useState(false)
 
-  const canSubmit = customerName.trim().length > 0 && method
+  const canSubmit = customerName.trim().length > 0 && method && (!structure || num(add))
 
   async function submit() {
     if (!canSubmit) return
@@ -53,7 +58,11 @@ export default function LensSell() {
       phone: phone.trim() || null,
       lensType,
       blueBlock,
-      addPower: structure ? 1 : null, // ponytail: counter sale just picks bifocal/progressive, not the exact Add power
+      sphRight: num(sphR),
+      sphLeft: num(sphL),
+      cylRight: num(cylR),
+      cylLeft: num(cylL),
+      addPower: structure ? num(add) : null,
       lensStructure: structure || null,
       paymentMethod: method,
       soldBy: user?.name ?? user?.email,
@@ -86,6 +95,11 @@ export default function LensSell() {
     setLensType('CLEAR')
     setBlueBlock(false)
     setStructure('')
+    setSphR('')
+    setSphL('')
+    setCylR('')
+    setCylL('')
+    setAdd('')
     setMethod('')
   }
 
@@ -96,11 +110,26 @@ export default function LensSell() {
       <Field label="Phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       <Select label="Lens type" value={lensType} options={LENS_TYPES as any} onChange={setLensType} />
       <Toggle label="Blue-light block" value={blueBlock} onChange={setBlueBlock} />
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}><Field label="SPH right" value={sphR} onChangeText={setSphR} keyboardType="numbers-and-punctuation" placeholder="-2.50" /></View>
+        <View style={{ flex: 1 }}><Field label="SPH left" value={sphL} onChangeText={setSphL} keyboardType="numbers-and-punctuation" placeholder="-2.50" /></View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}><Field label="CYL right" value={cylR} onChangeText={setCylR} keyboardType="numbers-and-punctuation" placeholder="-0.75" /></View>
+        <View style={{ flex: 1 }}><Field label="CYL left" value={cylL} onChangeText={setCylL} keyboardType="numbers-and-punctuation" placeholder="-0.75" /></View>
+      </View>
       <Select label="Add-on" value={structure} options={ADD_OPTIONS as any} onChange={setStructure} />
+      {!!structure && <Field label="Add power" value={add} onChangeText={setAdd} keyboardType="decimal-pad" placeholder="+2.00" />}
       <Select label="Payment method" value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />
 
       {error && <Text style={{ color: colors.danger }}>{error}</Text>}
       <Button label={busy ? 'Billing…' : 'Complete sale'} onPress={submit} disabled={!canSubmit} loading={busy} size="lg" />
     </Card>
   )
+}
+
+/** Blank -> null; accepts "-2.50", "+2", "2,50". */
+function num(v: string): number | null {
+  const n = parseFloat(v.replace(',', '.'))
+  return Number.isNaN(n) ? null : n
 }

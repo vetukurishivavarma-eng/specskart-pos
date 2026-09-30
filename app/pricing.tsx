@@ -23,8 +23,10 @@ export default function Pricing() {
       ListHeaderComponent={
         <View style={{ marginBottom: spacing.md }}>
           <Title>Lens pricing</Title>
-          {/* the old on/off stock switch was never enforced; blanks are counted per shop now */}
-          <Text style={styles.current}>Lens stock is counted per shop on the Stock tab (Lens blank items).</Text>
+          <Text style={styles.current}>
+            The lens is priced from the customer's SPH, CYL and Add. CYL ±2.25–±4.00 adds the surcharge; bifocal/progressive
+            beyond the stock range goes to RX. Lens stock is counted per shop on the Stock tab.
+          </Text>
         </View>
       }
       ItemSeparatorComponent={RowDivider}
