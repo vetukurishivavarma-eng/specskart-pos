@@ -9,6 +9,9 @@ const BASE_URL = (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined)
 
 export const api = axios.create({ baseURL: BASE_URL })
 
+/** Backend-relative asset paths (e.g. /api/public/product-images/…) as a full URL. */
+export const assetUrl = (u: string) => (u.startsWith('http') ? u : BASE_URL.replace(/\/api\/?$/, '') + u)
+
 api.interceptors.request.use((config) => {
   const token = useAuth.getState().token
   if (token) config.headers.Authorization = `Bearer ${token}`

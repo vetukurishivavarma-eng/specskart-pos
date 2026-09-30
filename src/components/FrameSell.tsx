@@ -31,6 +31,7 @@ export default function FrameSell() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [customerName, setCustomerName] = useState('')
   const [method, setMethod] = useState<string>('CASH')
+  const [discount, setDiscount] = useState('') // kwacha off the whole sale
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastSale, setLastSale] = useState<PosSaleView | null>(null)
@@ -70,15 +71,30 @@ export default function FrameSell() {
       : prev.map((l) => (l.product.id === productId ? { ...l, quantity } : l))))
   }
 
-  const total = cart.reduce((sum, l) => sum + l.product.priceMinor * l.quantity, 0)
+  const gross = cart.reduce((sum, l) => sum + l.product.priceMinor * l.quantity, 0)
+  const discountMinor = Math.min(gross, Math.max(0, Math.round(Number(discount.replace(',', '.') || 0) * 100) || 0))
+  const total = gross - discountMinor
+
+  // The backend takes a discount per line: spread the sale's discount across the frames by
+  // value, remainder on the last line, so no line goes below zero.
+  function lineDiscounts(): number[] {
+    let left = discountMinor
+    return cart.map((l, i) => {
+      const line = l.product.priceMinor * l.quantity
+      const d = i === cart.length - 1 ? left : Math.min(left, Math.floor((discountMinor * line) / gross))
+      left -= d
+      return d
+    })
+  }
 
   async function checkout() {
     if (!store || cart.length === 0) return
     setBusy(true)
     setError(null)
+    const off = lineDiscounts()
     const body = {
       storeId: store.id,
-      items: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity, unitPriceMinor: null, discountMinor: null })),
+      items: cart.map((l, i) => ({ productId: l.product.id, quantity: l.quantity, unitPriceMinor: null, discountMinor: off[i] || null })),
       payments: [{ method, amountMinor: total, reference: null }],
       customerName: customerName.trim() || null,
       customerPhone: null,
@@ -89,6 +105,7 @@ export default function FrameSell() {
       const { data } = await api.post<PosSaleView>('/admin/pos/sales', body)
       setCart([])
       setCustomerName('')
+      setDiscount('')
       setLastSale(data)
       qc.invalidateQueries({ queryKey: ['pos-inventory', store.id] })
     } catch (e) {
@@ -99,6 +116,7 @@ export default function FrameSell() {
         await enqueueSale('/admin/pos/sales', body, body.clientReference)
         setCart([])
         setCustomerName('')
+        setDiscount('')
         setQueuedOffline(true)
       } else {
         setError(apiError(e))
@@ -177,6 +195,9 @@ export default function FrameSell() {
               </Text>
             </View>
           ))}
+          <Field label="Discount (K, optional)" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" />
+          {discountMinor > 0 && <StatRow label="Before discount" value={formatKwacha(gross)} />}
+          {discountMinor > 0 && <StatRow label="Discount" value={`- ${formatKwacha(discountMinor)}`} />}
           <StatRow label="Total" value={formatKwacha(total)} emphasis />
 
           <Field label="Customer name (optional)" value={customerName} onChangeText={setCustomerName} />

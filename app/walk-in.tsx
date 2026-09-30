@@ -17,6 +17,8 @@ export default function WalkIn() {
   const store = useActiveStore((s) => s.store)
   const [name, setName] = useState('')
   const [started, setStarted] = useState<Started | null>(null)
+  const [phone, setPhone] = useState('')
+  const [saved, setSaved] = useState<Status | null>(null) // added by typing the number
 
   const start = useMutation({
     mutationFn: async () =>
@@ -31,10 +33,40 @@ export default function WalkIn() {
     refetchInterval: (q) => (q.state.data?.verified ? false : 3000),
   })
 
+  // No QR: staff type the number. Saved as a walk-in lead, but not opted in to offers --
+  // only the customer messaging us themselves counts as consent.
+  const manual = useMutation({
+    mutationFn: async () =>
+      (await api.post<Status>('/admin/pos/walk-ins/manual', {
+        storeId: store?.id ?? null, customerName: name.trim() || null, phone: phone.trim(),
+      })).data,
+    onSuccess: setSaved,
+  })
+
   const reset = () => {
     setStarted(null)
+    setSaved(null)
     setName('')
+    setPhone('')
     start.reset()
+    manual.reset()
+  }
+
+  if (saved) {
+    return (
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
+        <Title>Customer saved</Title>
+        <Card>
+          <View style={{ padding: spacing.lg, gap: spacing.md, alignItems: 'flex-start' }}>
+            <Badge label="Added by number" tone="accent" />
+            <Text style={{ fontSize: 20, fontWeight: '700', color: colors.primary }}>{saved.customerName ?? 'Customer'}</Text>
+            <Text style={{ color: colors.textMuted }}>{saved.whatsappNumber}</Text>
+            <Text style={{ color: colors.textMuted }}>Saved to Leads. Not signed up for offers — for that, they scan the QR.</Text>
+          </View>
+        </Card>
+        <Button label="Add another customer" icon="user-plus" onPress={reset} />
+      </ScrollView>
+    )
   }
 
   if (started && status.data?.verified) {
@@ -79,6 +111,12 @@ export default function WalkIn() {
       <Field label="Customer name (optional)" value={name} onChangeText={setName} placeholder="e.g. Mwila Phiri" autoCapitalize="words" />
       {start.isError && <Text style={{ color: colors.textMuted }}>{apiError(start.error)}</Text>}
       <Button label="Show WhatsApp QR" icon="maximize" size="lg" loading={start.isPending} onPress={() => start.mutate()} />
+
+      <Subtitle>Or type their number</Subtitle>
+      <Field label="WhatsApp number" value={phone} onChangeText={setPhone} placeholder="e.g. 0977 123456 or +260977123456" keyboardType="phone-pad" />
+      {manual.isError && <Text style={{ color: colors.danger }}>{apiError(manual.error)}</Text>}
+      <Button label="Save customer" icon="save" variant="secondary" size="lg" loading={manual.isPending}
+        disabled={phone.replace(/\D/g, '').length < 8} onPress={() => manual.mutate()} />
     </ScrollView>
   )
 }

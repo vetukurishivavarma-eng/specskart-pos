@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
-import { ScrollView, Text } from 'react-native'
-import { api, apiError } from '../../src/lib/api'
+import { Image, ScrollView, Text, View } from 'react-native'
+import { api, apiError, assetUrl } from '../../src/lib/api'
 import { colors, font, spacing } from '../../src/theme'
 import { Badge, Button, Field, Loading, Select, Title } from '../../src/ui/components'
 
@@ -27,7 +28,25 @@ type AdminProduct = {
   costPriceMinor: number
   stockQty: number
   status: string
+  brand: string | null
+  images: { id: string; url: string }[]
 }
+
+// Same shape codes as the website's filter (frontend/src/pages/Store.tsx).
+const SHAPES = [
+  { value: '', label: 'Pick a shape' },
+  { value: 'CATEYE', label: 'Cat-eye' },
+  { value: 'SQUARE_FRAME', label: 'Square' },
+  { value: 'AVIATOR', label: 'Aviator' },
+  { value: 'ROUND_FRAME', label: 'Round' },
+  { value: 'OVAL_FRAME', label: 'Oval' },
+  { value: 'RECTANGLE', label: 'Rectangle' },
+  { value: 'WAYFARER', label: 'Wayfarer' },
+  { value: 'GEOMETRIC', label: 'Geometric' },
+  { value: 'BROWLINE', label: 'Browline' },
+  { value: 'OVERSIZED', label: 'Oversized' },
+  { value: 'THIN_RIM', label: 'Thin-rim' },
+] as const
 
 const STATUSES = [
   { value: 'ACTIVE', label: 'Active' },
@@ -51,6 +70,9 @@ export default function ProductDetail() {
   })
 
   const [name, setName] = useState('')
+  const [brand, setBrand] = useState('')
+  const [shape, setShape] = useState('')
+  const [photo, setPhoto] = useState<string | null>(null) // picked, not uploaded yet
   const [sku, setSku] = useState('')
   const [barcode, setBarcode] = useState('')
   const [price, setPrice] = useState('')
@@ -63,6 +85,9 @@ export default function ProductDetail() {
   // Seed the form once the product loads -- can't set initial useState from a query result.
   useEffect(() => {
     if (!product) return
+    setName(product.name)
+    setBrand(product.brand ?? '')
+    setShape(product.frameCategoryCode ?? '')
     setSku(product.sku ?? '')
     setBarcode(product.barcode ?? '')
     setPrice((product.priceMinor / 100).toFixed(2))
@@ -73,9 +98,21 @@ export default function ProductDetail() {
 
   if (!creating && (isLoading || !product)) return <Loading />
 
+  async function pick(camera: boolean) {
+    const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) { setError('Allow access to add a photo.'); return }
+    const opts = { mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.7, allowsEditing: true }
+    const r = camera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts)
+    if (!r.canceled) setPhoto(r.assets[0].uri)
+  }
+
   async function save() {
-    if (creating && !name.trim()) {
+    if (!name.trim()) {
       setError('Give the frame a name.')
+      return
+    }
+    if (!sku.trim() || !price || !shape) {
+      setError('Code, price and shape are needed so it shows up in the shop filters.')
       return
     }
     setBusy(true)
@@ -84,9 +121,10 @@ export default function ProductDetail() {
     // on AdminProduct); on a create there is nothing to preserve, and the backend derives the
     // slug from the name.
     const body = {
-      name: creating ? name.trim() : product!.name,
+      name: name.trim(),
+      brand: brand.trim(),
       description: creating ? null : product!.description,
-      frameCategoryCode: creating ? null : product!.frameCategoryCode,
+      frameCategoryCode: shape || null,
       material: creating ? null : product!.material,
       colour: creating ? null : product!.colour,
       compareAtMinor: creating ? null : product!.compareAtMinor,
@@ -99,8 +137,14 @@ export default function ProductDetail() {
       status,
     }
     try {
-      if (creating) await api.post('/admin/catalog/products', body)
-      else await api.put(`/admin/catalog/products/${id}`, body)
+      const saved = creating
+        ? (await api.post<AdminProduct>('/admin/catalog/products', body)).data
+        : (await api.put<AdminProduct>(`/admin/catalog/products/${id}`, body)).data
+      if (photo) {
+        const form = new FormData()
+        form.append('file', { uri: photo, name: 'frame.jpg', type: 'image/jpeg' } as any)
+        await api.post(`/admin/catalog/products/${saved.id}/images`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      }
       qc.invalidateQueries({ queryKey: ['catalog-product', id] })
       qc.invalidateQueries({ queryKey: ['catalog-products'] })
       router.back()
@@ -114,13 +158,23 @@ export default function ProductDetail() {
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <Title>{creating ? 'New frame' : product!.name}</Title>
-      {creating ? (
-        <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Aviator Classic Gold" />
-      ) : (
-        <Badge label={product!.status} tone={product!.status === 'ACTIVE' ? 'success' : 'neutral'} />
-      )}
+      {!creating && <Badge label={product!.status} tone={product!.status === 'ACTIVE' ? 'success' : 'neutral'} />}
 
-      <Field label="SKU" value={sku} onChangeText={setSku} autoCapitalize="characters" />
+      <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+        {(product?.images ?? []).map((i) => (
+          <Image key={i.id} source={{ uri: assetUrl(i.url) }} style={{ width: 88, height: 88, borderRadius: 8 }} />
+        ))}
+        {photo && <Image source={{ uri: photo }} style={{ width: 88, height: 88, borderRadius: 8, opacity: 0.8 }} />}
+      </View>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Button label="Take photo" icon="camera" variant="secondary" onPress={() => pick(true)} style={{ flex: 1 }} />
+        <Button label="From gallery" icon="image" variant="secondary" onPress={() => pick(false)} style={{ flex: 1 }} />
+      </View>
+
+      <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Aviator Classic Gold" />
+      <Field label="Code (SKU)" value={sku} onChangeText={setSku} autoCapitalize="characters" />
+      <Field label="Brand" value={brand} onChangeText={setBrand} placeholder="e.g. Ray-Ban" autoCapitalize="words" />
+      <Select label="Frame shape" value={shape} options={SHAPES as any} onChange={setShape} />
       <Field label="Barcode" value={barcode} onChangeText={setBarcode} />
       <Field label="Price (K)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
       <Field label="Cost price (K)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />
