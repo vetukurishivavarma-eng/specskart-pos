@@ -596,9 +596,9 @@ const styles = StyleSheet.create({
   stepperLight: {
     backgroundColor: colors.surfaceSunken,
     borderTopWidth: 1,
-    borderTopColor: '#D9D2C4',
+    borderTopColor: colors.border,
     borderBottomWidth: 1,
-    borderBottomColor: '#FFFFFF',
+    borderBottomColor: colors.border,
   },
   stepperDark: {
     backgroundColor: 'rgba(0,0,0,0.22)',
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   stepBtnPressed: { transform: [{ scale: 0.9 }], opacity: 0.85 },
   stepBtnDisabled: { backgroundColor: 'transparent', borderWidth: 0, elevation: 0, shadowOpacity: 0 },
 
-  title: { fontFamily: font.bold, fontSize: 26, color: colors.text, letterSpacing: -0.5 },
+  title: { fontFamily: font.display, fontSize: 28, color: colors.ink, letterSpacing: -0.8 },
   subtitle: { fontFamily: font.regular, fontSize: 13, color: colors.textMuted, marginTop: 2 },
   sectionLabel: {
     fontFamily: font.semibold,
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     ...shadow.sunken,
   },
   btnText: { fontFamily: font.semibold, fontSize: 15 },
-  btnTextLg: { fontSize: 17, fontFamily: font.bold },
+  btnTextLg: { fontSize: 17, fontFamily: font.display, letterSpacing: -0.2 },
 
   card: {
     backgroundColor: colors.surface,
@@ -794,5 +794,5 @@ const styles = StyleSheet.create({
   },
   statLabel: { fontFamily: font.medium, fontSize: 14, color: colors.textMuted, flexShrink: 1 },
   statValue: { fontFamily: font.semibold, fontSize: 14, color: colors.text },
-  statValueStrong: { fontFamily: font.bold, fontSize: 17 },
+  statValueStrong: { fontFamily: font.display, fontSize: 20, letterSpacing: -0.4 },
 });

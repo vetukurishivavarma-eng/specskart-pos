@@ -11,7 +11,7 @@
 // dependency on Expo's pipeline working correctly in whatever environment CI happens to run.
 const sharp = require('sharp');
 const path = require('path');
-const { markSvg, BONE, INK, CLAY } = require('./mark-svg');
+const { markSvg, COBALT } = require('./mark-svg');
 const fs = require('fs');
 
 
@@ -35,11 +35,11 @@ async function main() {
     const dir = path.join(outRoot, density);
     fs.mkdirSync(dir, { recursive: true });
 
-    const legacy = sharp(Buffer.from(markSvg({ box: sizes.legacy, markColor: CLAY, bgColor: BONE, scale: 1 }))).png();
+    const legacy = sharp(Buffer.from(markSvg({ box: sizes.legacy, bgColor: COBALT, scale: 0.86 }))).png();
     await legacy.clone().toFile(path.join(dir, 'ic_launcher.png'));
     await legacy.clone().toFile(path.join(dir, 'ic_launcher_round.png'));
 
-    await sharp(Buffer.from(markSvg({ box: sizes.adaptive, markColor: CLAY, bgColor: null, scale: 0.6 })))
+    await sharp(Buffer.from(markSvg({ box: sizes.adaptive, bgColor: null, scale: 0.55 })))
       .png()
       .toFile(path.join(dir, 'ic_launcher_foreground.png'));
   }

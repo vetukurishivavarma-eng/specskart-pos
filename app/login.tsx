@@ -116,10 +116,10 @@ export default function Login() {
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.brand}>
               <View style={styles.mark}>
-                <Logo size={56} color={colors.accent} accent={colors.onDark} />
+                <Logo size={60} color="#FFFFFF" accent={colors.signal} />
               </View>
-              <Text style={styles.wordmark}>Specskart POS</Text>
-              <Text style={styles.tagline}>Lens pricing &amp; counter sales</Text>
+              <Text style={styles.wordmark}>specskart<Text style={{ color: colors.signal }}>.</Text></Text>
+              <Text style={styles.tagline}>Frames · Lenses · Counter</Text>
             </View>
 
             {mode === 'pick' ? (
@@ -250,9 +250,9 @@ const styles = StyleSheet.create({
   },
   acctAvatar: {
     width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.primarySoft,
   },
-  acctInitials: { fontFamily: font.bold, fontSize: 14, color: colors.accentDeep },
+  acctInitials: { fontFamily: font.bold, fontSize: 14, color: colors.primary },
   acctName: { fontFamily: font.bold, fontSize: 15, color: colors.text },
   acctMeta: { fontFamily: font.regular, fontSize: 12, color: colors.textMuted },
   acctForget: { padding: spacing.sm },
@@ -261,21 +261,21 @@ const styles = StyleSheet.create({
   washTop: { position: 'absolute', top: 0, left: 0, right: 0, height: '58%', backgroundColor: colors.primaryDeep },
   washGlow: {
     position: 'absolute', top: -140, right: -110, width: 380, height: 380, borderRadius: 190,
-    backgroundColor: colors.primaryBright, opacity: 0.35,
+    backgroundColor: colors.primary, opacity: 0.28,
   },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
   brand: { alignItems: 'center', marginBottom: spacing.xl },
   mark: {
     width: 96, height: 96, borderRadius: radius.xl, backgroundColor: colors.brandCard,
-    alignItems: 'center', justifyContent: 'center', ...shadow.raised, ...bevel.light,
+    alignItems: 'center', justifyContent: 'center', ...shadow.raised,
   },
-  wordmark: { fontFamily: font.extrabold, fontSize: 26, color: colors.onDark, marginTop: spacing.md, letterSpacing: -0.6 },
+  wordmark: { fontFamily: font.displayHeavy, fontSize: 34, color: colors.onDark, marginTop: spacing.md, letterSpacing: -1.2 },
   tagline: {
     fontFamily: font.medium, fontSize: 12, color: colors.onDarkMuted, letterSpacing: 1.8,
     textTransform: 'uppercase', marginTop: 4,
   },
   card: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, ...shadow.raised, ...bevel.light },
-  cardTitle: { fontFamily: font.bold, fontSize: 21, color: colors.text, letterSpacing: -0.3 },
+  cardTitle: { fontFamily: font.display, fontSize: 22, color: colors.text, letterSpacing: -0.3 },
   cardHint: { fontFamily: font.regular, fontSize: 13, color: colors.textMuted, marginBottom: spacing.lg },
   label: {
     fontFamily: font.semibold, fontSize: 11, color: colors.textFaint, letterSpacing: 1,

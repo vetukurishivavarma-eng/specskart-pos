@@ -1,63 +1,55 @@
 /**
- * Visual language for Specskart POS — same structure/tokens as NG POS's theme
- * (colors/font/spacing/radius/shadow/bevel/motion + the same component kit reads
- * off these names), recoloured to Specskart's own identity instead of borrowing
- * another client's brand. Palette matches the web frontend's Tailwind tokens
- * (frontend/tailwind.config.js: ink/bone/clay/moss) so the two feel like one product.
+ * Visual language for Specskart POS (2026-10 rebrand): cobalt + navy-ink + coral, lime glint,
+ * Bricolage Grotesque headings over Plus Jakarta body. Matches the web's Tailwind tokens
+ * (frontend/tailwind.config.js) so the two feel like one product.
  */
 
 export const colors = {
-  // Clay — primary actions and active state. This was near-black ink until the accent was
-  // promoted: a till full of black buttons read as a form to fill in rather than a thing to
-  // use, and the brand already owned a warmer colour that was being spent on almost nothing.
-  // Text stays ink (see `text`/`ink` below) — only the things you press are clay.
-  primary: '#b4552d',
-  // The dark wash behind the login and lock screens. Deliberately still near-black: it is a
-  // backdrop, not an action, and a full-bleed terracotta field is a lot of colour.
-  primaryDeep: '#0a0908',
-  primaryBright: '#2a2622',
-  primarySoft: '#f5e3da',
+  // Optic Cobalt -- the one colour you press. Electric enough to read as a modern optical
+  // brand rather than a craft-paper template; text never uses it.
+  primary: '#2342F0',
+  // Navy-black backdrop behind login and lock.
+  primaryDeep: '#0A0F1F',
+  primaryBright: '#1A2340',
+  primarySoft: '#E7EBFF',
 
-  // Clay — the accent. Used sparingly: totals, highlights, warnings.
-  accent: '#b4552d',
-  accentDeep: '#8f4223',
-  accentBright: '#d4724a',
-  accentSoft: '#f7e8e0',
+  // Coral -- the second voice, spent on totals and highlights only.
+  accent: '#E8492E',
+  accentDeep: '#C23A22',
+  accentBright: '#FF7A5C',
+  accentSoft: '#FFEBE5',
 
-  // A cool counterweight. Everything in this palette was warm, which is what made the screens
-  // read as one undifferentiated wash -- a second family is what makes the warm colours look
-  // chosen rather than default.
-  cool: '#2f4858',
-  coolSoft: '#e4ebf0',
+  // Lime "lens glint" from the logo. Only ever on dark or cobalt surfaces -- it disappears on white.
+  signal: '#C8F04B',
 
-  /** The card the wordmark sits on, and the adaptive icon's background. */
-  brandCard: '#f6f3ee',
+  cool: '#33415C',
+  coolSoft: '#E8ECF3',
 
-  // Bone paper neutrals. The canvas is a touch deeper than it was so a white card actually
-  // separates from it -- at #f6f3ee against #FFFFFF the two were nearly the same value and
-  // every screen read as one flat sheet.
-  canvas: '#f2eee7',
+  /** The tile the mark sits on, and the adaptive icon's background. */
+  brandCard: '#2342F0',
+
+  // Cool neutrals: hairline-bordered white cards on a barely-grey canvas.
+  canvas: '#F4F5F7',
   surface: '#FFFFFF',
-  surfaceSunken: '#e7e2d9',
-  border: '#e2ddd3',
-  borderStrong: '#cec6b7',
+  surfaceSunken: '#ECEEF2',
+  border: '#E3E6EB',
+  borderStrong: '#CDD2DA',
 
-  // Moss-tinted near-black text, so text sits in the same family as the brand.
-  ink: '#14110f',
-  text: '#1c1a17',
-  textMuted: '#6f6a61',
-  textFaint: '#9c968a',
-  onDark: '#f6f3ee',
-  onDarkMuted: '#b8b2a6',
+  ink: '#0A0F1F',
+  text: '#121826',
+  textMuted: '#5B6475',
+  textFaint: '#9AA1AE',
+  onDark: '#F4F6FF',
+  onDarkMuted: '#A9B1C6',
 
-  danger: '#c0442c',
-  dangerSoft: '#fae7e2',
-  success: '#3f4a3c',
-  successSoft: '#e3e7e1',
-  warning: '#8f4223',
-  warningSoft: '#f5e3da',
-  info: '#3f4a3c',
-  infoSoft: '#e3e7e1',
+  danger: '#D92D20',
+  dangerSoft: '#FDECEA',
+  success: '#12805C',
+  successSoft: '#E3F5EE',
+  warning: '#B54708',
+  warningSoft: '#FEF0E1',
+  info: '#2342F0',
+  infoSoft: '#E7EBFF',
 } as const;
 
 export const font = {
@@ -66,6 +58,10 @@ export const font = {
   semibold: 'Jakarta_600SemiBold',
   bold: 'Jakarta_700Bold',
   extrabold: 'Jakarta_800ExtraBold',
+  // Headings, totals and the wordmark -- a grotesque with some character, so screens don't
+  // look like every other template.
+  display: 'Bricolage_700Bold',
+  displayHeavy: 'Bricolage_800ExtraBold',
 } as const;
 
 export const spacing = {
@@ -85,49 +81,50 @@ export const radius = {
   pill: 999,
 } as const;
 
+// Flat and crisp: one hairline + a whisper of shadow. The old bevels/drop-shadows made every
+// card look like a plastic key.
 export const shadow = {
   card: {
-    shadowColor: '#141110',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    shadowColor: '#0A0F1F',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   raised: {
-    shadowColor: '#0a0908',
-    shadowOpacity: 0.16,
+    shadowColor: '#0A0F1F',
+    shadowOpacity: 0.14,
     shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
   tile: {
-    shadowColor: '#0a0908',
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
+    shadowColor: '#0A0F1F',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
   sunken: {
-    shadowColor: '#0a0908',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowColor: '#0A0F1F',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
 } as const;
 
+/** Kept as names so the component kit still reads them; now just even hairlines. */
 export const bevel = {
   light: {
-    borderTopColor: '#FFFFFF',
+    borderTopColor: '#E3E6EB',
     borderTopWidth: 1,
-    borderBottomColor: '#DFD8CA',
-    borderBottomWidth: 1.5,
+    borderBottomColor: '#E3E6EB',
+    borderBottomWidth: 1,
   },
   dark: {
-    borderTopColor: 'rgba(255,255,255,0.22)',
-    borderTopWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.22)',
-    borderBottomWidth: 1.5,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
   },
 } as const;
 

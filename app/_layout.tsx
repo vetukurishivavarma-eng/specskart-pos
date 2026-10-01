@@ -7,6 +7,7 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans'
+import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque'
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef } from 'react'
@@ -87,6 +88,8 @@ export default function RootLayout() {
     Jakarta_600SemiBold: PlusJakartaSans_600SemiBold,
     Jakarta_700Bold: PlusJakartaSans_700Bold,
     Jakarta_800ExtraBold: PlusJakartaSans_800ExtraBold,
+    Bricolage_700Bold: BricolageGrotesque_700Bold,
+    Bricolage_800ExtraBold: BricolageGrotesque_800ExtraBold,
   })
   const { token } = useAuth()
   const restoreLock = useScreenLock((s) => s.restore)

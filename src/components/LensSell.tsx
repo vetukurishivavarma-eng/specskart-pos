@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import * as Crypto from 'expo-crypto'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -6,8 +7,8 @@ import { api, apiError } from '../lib/api'
 import { useActiveStore } from '../lib/activeStore'
 import { useAuth } from '../lib/auth'
 import { enqueueSale, isNetworkError } from '../lib/offlineQueue'
-import { colors, spacing } from '../theme'
-import { Badge, Button, Card, Field, Select, Toggle } from '../ui/components'
+import { colors, formatKwacha, spacing } from '../theme'
+import { Badge, Button, Card, Field, Select, StatRow, Toggle } from '../ui/components'
 
 const LENS_TYPES = [
   { value: 'CLEAR', label: 'Clear' },
@@ -43,11 +44,33 @@ export default function LensSell() {
   const [cylL, setCylL] = useState('')
   const [add, setAdd] = useState('')
   const [method, setMethod] = useState('')
+  const [discount, setDiscount] = useState('') // kwacha off this sale
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [queuedOffline, setQueuedOffline] = useState(false)
 
-  const canSubmit = customerName.trim().length > 0 && method && (!structure || num(add))
+  const priceInputs = {
+    lensType,
+    blueBlock,
+    sphRight: num(sphR),
+    sphLeft: num(sphL),
+    cylRight: num(cylR),
+    cylLeft: num(cylL),
+    addPower: structure ? num(add) : null,
+    lensStructure: structure || null,
+  }
+  // Off-sheet Rx or offline -> no price shown; the backend still checks the discount on the sale.
+  const quote = useQuery({
+    queryKey: ['lens-walk-in-quote', priceInputs],
+    queryFn: async () => (await api.post<{ priceMinor: number }>('/admin/lens-sales/walk-in/quote', priceInputs)).data.priceMinor,
+    enabled: !structure || num(add) !== null,
+    retry: false,
+  })
+  const price = quote.data
+  const discountMinor = Math.max(0, Math.round((num(discount) ?? 0) * 100))
+  const tooMuch = price !== undefined && discountMinor > price
+
+  const canSubmit = customerName.trim().length > 0 && method && (!structure || num(add)) && !tooMuch
 
   async function submit() {
     if (!canSubmit) return
@@ -56,14 +79,8 @@ export default function LensSell() {
     const body = {
       customerName: customerName.trim(),
       phone: phone.trim() || null,
-      lensType,
-      blueBlock,
-      sphRight: num(sphR),
-      sphLeft: num(sphL),
-      cylRight: num(cylR),
-      cylLeft: num(cylL),
-      addPower: structure ? num(add) : null,
-      lensStructure: structure || null,
+      ...priceInputs,
+      discountMinor: discountMinor || null,
       paymentMethod: method,
       soldBy: user?.name ?? user?.email,
       shopName: null,
@@ -101,6 +118,7 @@ export default function LensSell() {
     setCylL('')
     setAdd('')
     setMethod('')
+    setDiscount('')
   }
 
   return (
@@ -120,6 +138,12 @@ export default function LensSell() {
       </View>
       <Select label="Add-on" value={structure} options={ADD_OPTIONS as any} onChange={setStructure} />
       {!!structure && <Field label="Add power" value={add} onChangeText={setAdd} keyboardType="decimal-pad" placeholder="+2.00" />}
+      <Field label="Discount (K, optional)" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" />
+      {price !== undefined && discountMinor > 0 && <StatRow label="Before discount" value={formatKwacha(price)} />}
+      {price !== undefined && discountMinor > 0 && <StatRow label="Discount" value={`- ${formatKwacha(discountMinor)}`} />}
+      {price !== undefined && <StatRow label="Total" value={formatKwacha(Math.max(0, price - discountMinor))} emphasis />}
+      {tooMuch && <Text style={{ color: colors.danger }}>Discount can't be more than the lens price.</Text>}
+      {quote.isError && <Text style={{ color: colors.textMuted }}>{apiError(quote.error)}</Text>}
       <Select label="Payment method" value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />
 
       {error && <Text style={{ color: colors.danger }}>{error}</Text>}

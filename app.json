@@ -2,21 +2,21 @@
   "expo": {
     "name": "Specskart POS",
     "slug": "specskart-pos",
-    "version": "1.10.0",
+    "version": "1.11.0",
     "orientation": "portrait",
     "scheme": "specskartpos",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.specskart.pos",
-      "versionCode": 15,
+      "versionCode": 16,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f6f3ee"
+        "backgroundColor": "#2342F0"
       }
     },
     "plugins": [

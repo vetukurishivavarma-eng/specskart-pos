@@ -12,12 +12,12 @@ import { Button, Card, ListRow, RowDivider, SectionLabel, Subtitle, Title } from
  * only, so nothing here competes with a real status colour like danger or success.
  */
 const SECTION = {
-  customers: '#b4552d', // clay, the brand accent
-  lens: '#2f6f6b',      // teal
-  products: '#6b4f9e',  // violet
-  frames: '#8f6a23',    // amber
-  stock: '#3f6b45',     // green
-  account: '#5a6472',   // slate
+  customers: '#2342F0', // cobalt, the brand primary
+  lens: '#0E8C8C',      // teal
+  products: '#6D4AE0',  // violet
+  frames: '#E8492E',    // coral
+  stock: '#12805C',     // green
+  account: '#5B6475',   // slate
 } as const
 
 export default function More() {
