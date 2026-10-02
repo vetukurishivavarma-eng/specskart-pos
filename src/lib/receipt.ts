@@ -12,23 +12,37 @@ import { PosSaleView } from './pos'
  * printer's print-service is missing or the shop needs finer control, swap this for a
  * dedicated ESC/POS library targeting that printer.
  */
-export async function printSaleReceipt(sale: PosSaleView, storeName: string) {
-  const rows = sale.items.map((i) =>
+export type LensOnBill = { ref: string; label: string; priceMinor: number; method: string; createdAt?: string }
+
+/** Prints a frame sale, a lens order, or both on one bill (the counter's combined sale). */
+export async function printSaleReceipt(sale: PosSaleView | null, storeName: string, lens?: LensOnBill) {
+  const rows = (sale?.items ?? []).map((i) =>
     `<tr><td>${i.quantity} × ${escapeHtml(i.productName)}</td><td style="text-align:right">${formatKwacha(i.lineTotalMinor)}</td></tr>`
-  ).join('')
-  const payRows = sale.payments.map((p) =>
+  ).join('') + (lens
+    ? `<tr><td>Lenses · ${escapeHtml(lens.label)}<br/><small>${lens.ref}</small></td><td style="text-align:right">${formatKwacha(lens.priceMinor)}</td></tr>`
+    : '')
+  const payments = [...(sale?.payments ?? [])]
+  if (lens) {
+    const same = payments.find((p) => p.method === lens.method)
+    if (same) same.amountMinor += lens.priceMinor
+    else payments.push({ method: lens.method, amountMinor: lens.priceMinor, reference: null })
+  }
+  const payRows = payments.map((p) =>
     `<tr><td>${p.method}</td><td style="text-align:right">${formatKwacha(p.amountMinor)}</td></tr>`
   ).join('')
+  const total = (sale?.totalMinor ?? 0) + (lens?.priceMinor ?? 0)
+  const number = [sale?.receiptNumber, lens?.ref].filter(Boolean).join(' · ')
+  const when = new Date(sale?.createdAt ?? lens?.createdAt ?? Date.now()).toLocaleString()
 
   const html = `
     <html><body style="font-family: monospace; font-size: 14px; width: 280px; margin: 0 auto;">
-      <h2 style="text-align:center; margin-bottom:4px;">${escapeHtml(storeName)}</h2>
-      <p style="text-align:center; margin-top:0;">${sale.receiptNumber}<br/>${new Date(sale.createdAt).toLocaleString()}</p>
+      <h2 style="text-align:center; margin-bottom:4px;">${escapeHtml(storeName || 'Specskart')}</h2>
+      <p style="text-align:center; margin-top:0;">${number}<br/>${when}</p>
       <hr/>
       <table style="width:100%">${rows}</table>
       <hr/>
       <table style="width:100%">
-        <tr><td><b>Total</b></td><td style="text-align:right"><b>${formatKwacha(sale.totalMinor)}</b></td></tr>
+        <tr><td><b>Total</b></td><td style="text-align:right"><b>${formatKwacha(total)}</b></td></tr>
       </table>
       <hr/>
       <table style="width:100%">${payRows}</table>
