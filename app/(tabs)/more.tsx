@@ -48,7 +48,7 @@ export default function More() {
       <View>
         <SectionLabel>Lens business</SectionLabel>
         <Card>
-          <ListRow tint={SECTION.lens} icon="inbox" title="Web orders" subtitle="Verified online, awaiting pickup" onPress={() => router.push('/orders')} />
+          <ListRow tint={SECTION.lens} icon="inbox" title="Lens orders" subtitle="Web + counter orders: lab, ready, pickup" onPress={() => router.push('/orders')} />
           {user?.role === 'ADMIN' && (
             <>
               <RowDivider />

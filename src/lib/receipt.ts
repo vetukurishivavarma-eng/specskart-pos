@@ -12,7 +12,7 @@ import { PosSaleView } from './pos'
  * printer's print-service is missing or the shop needs finer control, swap this for a
  * dedicated ESC/POS library targeting that printer.
  */
-export type LensOnBill = { ref: string; label: string; priceMinor: number; method: string; createdAt?: string }
+export type LensOnBill = { ref: string; label: string; priceMinor: number; method: string; createdAt?: string; balanceMinor?: number }
 
 /** Prints a frame sale, a lens order, or both on one bill (the counter's combined sale). */
 export async function printSaleReceipt(sale: PosSaleView | null, storeName: string, lens?: LensOnBill) {
@@ -22,10 +22,11 @@ export async function printSaleReceipt(sale: PosSaleView | null, storeName: stri
     ? `<tr><td>Lenses · ${escapeHtml(lens.label)}<br/><small>${lens.ref}</small></td><td style="text-align:right">${formatKwacha(lens.priceMinor)}</td></tr>`
     : '')
   const payments = [...(sale?.payments ?? [])]
-  if (lens) {
+  const lensPaid = lens ? lens.priceMinor - (lens.balanceMinor ?? 0) : 0
+  if (lens && lensPaid > 0) {
     const same = payments.find((p) => p.method === lens.method)
-    if (same) same.amountMinor += lens.priceMinor
-    else payments.push({ method: lens.method, amountMinor: lens.priceMinor, reference: null })
+    if (same) same.amountMinor += lensPaid
+    else payments.push({ method: lens.method, amountMinor: lensPaid, reference: null })
   }
   const payRows = payments.map((p) =>
     `<tr><td>${p.method}</td><td style="text-align:right">${formatKwacha(p.amountMinor)}</td></tr>`
@@ -46,6 +47,7 @@ export async function printSaleReceipt(sale: PosSaleView | null, storeName: stri
       </table>
       <hr/>
       <table style="width:100%">${payRows}</table>
+      ${lens?.balanceMinor ? `<p><b>Balance due at pickup: ${formatKwacha(lens.balanceMinor)}</b><br/>Quote ${lens.ref} when you collect.</p>` : ''}
       <p style="text-align:center; margin-top:16px;">Thank you for shopping at Specskart</p>
     </body></html>
   `

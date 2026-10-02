@@ -25,4 +25,9 @@ export type SaleView = {
   sphRight: number | null; cylRight: number | null; axisRight: number | null
   sphLeft: number | null; cylLeft: number | null; axisLeft: number | null
   addPower: number | null
+  /** for the lab: "62" or "31.5/30.5" */
+  pd: string | null
+  /** money taken so far, and what is still owed at pickup */
+  paidMinor: number
+  balanceMinor: number
 }

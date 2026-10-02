@@ -50,7 +50,7 @@ export default function Orders() {
 
   const header = (
     <View style={{ marginBottom: spacing.md, gap: spacing.md }}>
-      <Title>Web orders</Title>
+      <Title>Lens orders</Title>
       <View style={styles.tabs}>
         <Button
           label="To do"
@@ -89,11 +89,11 @@ export default function Orders() {
         ) : (
           <EmptyState
             icon="inbox"
-            title={linkedId ? 'That order is not waiting here' : 'No web orders waiting'}
+            title={linkedId ? 'That order is not waiting here' : 'No lens orders waiting'}
             hint={
               linkedId
                 ? 'It may already have been collected — check the Collected tab.'
-                : 'Orders verified over WhatsApp will show up here for pickup.'
+                : 'Web orders and counter orders sent to the lab show up here until they are collected.'
             }
           />
         )
@@ -114,7 +114,8 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
 
   const stage = sale.fulfilment ?? 'ORDERED'
   const next = LADDER[LADDER.indexOf(stage as any) + 1]
-  const handover = next === 'DELIVERED' && !sale.paid // the rung that also bills it, unless already paid online
+  // the rung that also bills it -- only needs a payment method if something is still owed
+  const handover = next === 'DELIVERED' && sale.balanceMinor > 0
 
   async function advance() {
     if (handover && !method) return
@@ -163,7 +164,12 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
       <Text style={styles.name}>{sale.customerName ?? 'Unnamed customer'}</Text>
       <View style={styles.badges}>
         <Badge label={STAGE_LABEL[stage] ?? stage} tone={stage === 'READY' ? 'warning' : 'neutral'} />
-        {sale.paid && <Badge label="Paid online" tone="success" />}
+        {sale.walkIn && <Badge label="Counter" tone="neutral" />}
+        {sale.balanceMinor === 0
+          ? <Badge label={sale.walkIn ? 'Paid' : sale.paid ? 'Paid online' : 'Paid'} tone="success" />
+          : sale.paidMinor > 0
+            ? <Badge label={`Deposit ${formatKwacha(sale.paidMinor)} · due ${formatKwacha(sale.balanceMinor)}`} tone="warning" />
+            : <Badge label={`Due at pickup ${formatKwacha(sale.balanceMinor)}`} tone="warning" />}
       </View>
       <Text style={styles.detail}>
         {sale.lensType}{sale.blueBlock ? ' + blue block' : ''}{sale.lensStructure ? ` + ${sale.lensStructure.toLowerCase()}` : ''}
@@ -172,6 +178,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
         <Text style={styles.detail}>{[sale.age && `${sale.age} yrs`, sale.gender].filter(Boolean).join(' · ')}</Text>
       )}
       <RxTable rx={sale} />
+      {sale.pd && <Text style={styles.detail}>PD {sale.pd}</Text>}
       {sale.specialAxis && <Badge label="Special axis — check before handing over" tone="warning" />}
       <Text style={styles.price}>{formatKwacha(sale.priceMinor)}</Text>
       <View style={styles.tabs}>
@@ -199,7 +206,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
           loading={busy}
         />
       )}
-      {handover && !method && <Text style={styles.hint}>Pick how they paid to close the order.</Text>}
+      {handover && !method && <Text style={styles.hint}>Pick how they paid the {formatKwacha(sale.balanceMinor)} due to close the order.</Text>}
       {next && <Button label="Cancel order" variant="ghost" onPress={cancel} disabled={busy} />}
     </Card>
   )

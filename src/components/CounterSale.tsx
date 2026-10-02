@@ -28,7 +28,7 @@ const ADD_OPTIONS = [
   { value: 'PROGRESSIVE', label: 'Progressive' },
 ] as const
 
-type Bill = { frame: PosSaleView | null; lens: { id: string; priceMinor: number | null } | null; totalMinor: number }
+type Bill = { frame: PosSaleView | null; lens: { id: string; priceMinor: number | null; balanceMinor: number } | null; totalMinor: number }
 
 /** The counter's one bill: frames from this shop's stock and/or a pair of lenses, one discount,
  *  one payment, one total. Backed by POST /admin/pos/combined-sales, which records both halves
@@ -52,6 +52,11 @@ export default function CounterSale() {
   const [cylR, setCylR] = useState('')
   const [cylL, setCylL] = useState('')
   const [add, setAdd] = useState('')
+  const [axisR, setAxisR] = useState('')
+  const [axisL, setAxisL] = useState('')
+  const [pd, setPd] = useState('')
+  const [takesNow, setTakesNow] = useState(false) // fitted while they wait -- skips the lab queue
+  const [payingNow, setPayingNow] = useState('')   // blank = the whole bill
   // the bill
   const [customerName, setCustomerName] = useState('')
   const [phone, setPhone] = useState('')
@@ -59,7 +64,7 @@ export default function CounterSale() {
   const [method, setMethod] = useState<string>('CASH')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ bill: Bill | null; lens?: LensOnBill } | null>(null)
+  const [done, setDone] = useState<{ bill: Bill | null; lens?: LensOnBill; takenNow?: boolean } | null>(null)
 
   useFocusEffect(useCallback(() => {
     const code = useScanCapture.getState().consume()
@@ -133,8 +138,20 @@ export default function CounterSale() {
     })
   }
 
+  // A deposit is taken against the lenses only: frames are paid for at the counter.
+  const billTotal = Math.max(0, gross - discountMinor)
+  const framesNet = framesGross - framesDiscount
+  const lensNet = lensPrice === undefined ? undefined : lensPrice - lensDiscount
+  const payNowMinor = num(payingNow) === null ? null : Math.round((num(payingNow) ?? 0) * 100)
+  const lensDeposit = !withLens || takesNow || payNowMinor === null ? null : payNowMinor - framesNet
+  const depositProblem = lensDeposit === null ? null
+    : lensDeposit < 0 ? `Pay at least ${formatKwacha(framesNet)} — the frames are paid in full today`
+    : lensNet !== undefined && lensDeposit > lensNet ? "That's more than the bill"
+    : null
+  const balanceDue = lensDeposit !== null && lensNet !== undefined ? Math.max(0, lensNet - lensDeposit) : 0
+
   const hasSomething = cart.length > 0 || withLens
-  const canCharge = hasSomething && !tooMuch && (!withLens || (customerName.trim().length > 0 && (!structure || num(add) !== null)))
+  const canCharge = hasSomething && !tooMuch && !depositProblem && (!withLens || (customerName.trim().length > 0 && (!structure || num(add) !== null)))
 
   async function charge() {
     if (!canCharge) return
@@ -162,6 +179,11 @@ export default function CounterSale() {
         clientReference: `${ref}-l`,
         storeId: store?.id ?? null,
         discountMinor: lensDiscount || null,
+        axisRight: int(axisR),
+        axisLeft: int(axisL),
+        pd: pd.trim() || null,
+        depositMinor: lensDeposit,
+        collectedNow: takesNow,
       } : null,
     }
     const lensLabel = [LENS_TYPES.find((t) => t.value === lensType)?.label, blueBlock && 'blue-block', structure.toLowerCase()].filter(Boolean).join(', ')
@@ -169,7 +191,8 @@ export default function CounterSale() {
       const { data } = await api.post<Bill>('/admin/pos/combined-sales', body)
       setDone({
         bill: data,
-        lens: data.lens ? { ref: `LENS-${data.lens.id.slice(0, 8).toUpperCase()}`, label: lensLabel, priceMinor: data.lens.priceMinor ?? 0, method } : undefined,
+        takenNow: takesNow,
+        lens: data.lens ? { ref: `LENS-${data.lens.id.slice(0, 8).toUpperCase()}`, label: lensLabel, priceMinor: data.lens.priceMinor ?? 0, method, balanceMinor: data.lens.balanceMinor } : undefined,
       })
       if (store) qc.invalidateQueries({ queryKey: ['pos-inventory', store.id] })
       reset()
@@ -190,6 +213,7 @@ export default function CounterSale() {
   function reset() {
     setCart([]); setQuery(''); setWithLens(false); setLensType('CLEAR'); setBlueBlock(false); setStructure('')
     setSphR(''); setSphL(''); setCylR(''); setCylL(''); setAdd('')
+    setAxisR(''); setAxisL(''); setPd(''); setTakesNow(false); setPayingNow('')
     setCustomerName(''); setPhone(''); setDiscount(''); setMethod('CASH')
   }
 
@@ -204,6 +228,14 @@ export default function CounterSale() {
             <Text style={{ fontFamily: font.regular, fontSize: 13, color: colors.textMuted }}>
               {[b.frame?.receiptNumber, done.lens?.ref].filter(Boolean).join(' · ')}
             </Text>
+            {!!done.lens?.balanceMinor && (
+              <Badge label={`Balance at pickup: ${formatKwacha(done.lens.balanceMinor)}`} tone="warning" />
+            )}
+            {done.lens && !done.takenNow && (
+              <Text style={{ fontFamily: font.regular, fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
+                Lenses are on the Lens orders list. Mark them ready there and the customer gets a WhatsApp.
+              </Text>
+            )}
             <Button label="Print receipt" variant="secondary" icon="printer" onPress={() => printSaleReceipt(b.frame, store?.name ?? '', done.lens)} />
           </>
         )}
@@ -279,6 +311,12 @@ export default function CounterSale() {
             </View>
             <Select label="Add-on" value={structure} options={ADD_OPTIONS as any} onChange={setStructure} />
             {!!structure && <Field label="Add power" value={add} onChangeText={setAdd} keyboardType="decimal-pad" placeholder="+2.00" />}
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <View style={{ flex: 1 }}><Field label="Axis right" value={axisR} onChangeText={setAxisR} keyboardType="number-pad" placeholder="0–180" /></View>
+              <View style={{ flex: 1 }}><Field label="Axis left" value={axisL} onChangeText={setAxisL} keyboardType="number-pad" placeholder="0–180" /></View>
+              <View style={{ flex: 1 }}><Field label="PD" value={pd} onChangeText={setPd} keyboardType="numbers-and-punctuation" placeholder="62" /></View>
+            </View>
+            <Toggle label="Customer takes them now" hint="Fitted while they wait — skips the lab queue" value={takesNow} onChange={setTakesNow} />
             {lensPrice !== undefined && <StatRow label="Lens price" value={formatKwacha(lensPrice)} />}
             {quote.isError && <Text style={{ fontFamily: font.regular, color: colors.textMuted }}>{apiError(quote.error)}</Text>}
           </>
@@ -293,17 +331,30 @@ export default function CounterSale() {
           <Field label="Phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           <Field label="Discount (K, optional)" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" />
           <Select label="Payment method" value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />
+          {withLens && !takesNow && (
+            <Field
+              label="Paying now (K, optional)"
+              hint="Leave blank for the full amount. Anything less is a deposit — the balance is taken at pickup."
+              value={payingNow}
+              onChangeText={setPayingNow}
+              keyboardType="decimal-pad"
+              placeholder={lensNet !== undefined ? (billTotal / 100).toFixed(2) : 'Full amount'}
+            />
+          )}
 
           <View style={{ gap: spacing.xs, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
             {cart.length > 0 && <StatRow label="Frames" value={formatKwacha(framesGross)} />}
             {withLens && <StatRow label="Lenses" value={lensPrice !== undefined ? formatKwacha(lensPrice) : '—'} />}
             {discountMinor > 0 && <StatRow label="Discount" value={`- ${formatKwacha(discountMinor)}`} />}
-            <StatRow label="Total" value={withLens && lensPrice === undefined ? '—' : formatKwacha(Math.max(0, gross - discountMinor))} emphasis />
+            <StatRow label="Total" value={withLens && lensPrice === undefined ? '—' : formatKwacha(billTotal)} emphasis />
+            {balanceDue > 0 && <StatRow label="Paying now" value={formatKwacha(payNowMinor ?? 0)} />}
+            {balanceDue > 0 && <StatRow label="Balance at pickup" value={formatKwacha(balanceDue)} />}
           </View>
+          {depositProblem && <Text style={{ color: colors.danger }}>{depositProblem}</Text>}
           {tooMuch && <Text style={{ color: colors.danger }}>Discount can't be more than the bill.</Text>}
           {error && <Text style={{ color: colors.danger }}>{error}</Text>}
           <Button
-            label={busy ? 'Billing…' : withLens && lensPrice === undefined ? 'Charge' : `Charge ${formatKwacha(Math.max(0, gross - discountMinor))}`}
+            label={busy ? 'Billing…' : withLens && lensPrice === undefined ? 'Charge' : `Charge ${formatKwacha(balanceDue > 0 ? payNowMinor ?? 0 : billTotal)}`}
             onPress={charge}
             disabled={!canCharge}
             loading={busy}
@@ -313,6 +364,12 @@ export default function CounterSale() {
       )}
     </View>
   )
+}
+
+/** Whole number or null, for the axis. */
+function int(v: string): number | null {
+  const n = parseInt(v, 10)
+  return Number.isNaN(n) ? null : n
 }
 
 /** Blank -> null; accepts "-2.50", "+2", "2,50". */
