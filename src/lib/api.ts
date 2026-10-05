@@ -5,7 +5,7 @@ import { useAuth } from './auth'
 // Same backend as the Specskart website — no separate POS service/DB. Baked in at build
 // time via app.json `extra.apiBaseUrl`; falls back to the live prod API.
 const BASE_URL = (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined)
-  ?? 'https://specskart-api.onrender.com/api'
+  ?? 'https://specskart-api-9b08.onrender.com/api'
 
 export const api = axios.create({ baseURL: BASE_URL })
 

@@ -37,7 +37,7 @@ npm install
 npx expo start
 ```
 
-Points at the live prod API (`https://specskart-api.onrender.com/api`) by default. To point
+Points at the live prod API (`https://specskart-api-9b08.onrender.com/api`) by default. To point
 at a local backend during development, add to `app.json`:
 
 ```json
