@@ -100,6 +100,12 @@ export type TransferView = {
   createdAt: string
 }
 
+/** Mirrors AdminDeviceController.SignedInDeviceView: an active device + the login it holds. */
+export type SignedInDevice = {
+  id: string; deviceName: string; platform: string; appVersion: string | null; lastSeenAt: string
+  userId: string; userName: string | null; userEmail: string | null
+}
+
 export type StaffMember = { id: string; name: string; email: string; role: string; active: boolean; storeId: string | null }
 
 export type TopItem = { name: string; quantity: number; totalMinor: number }

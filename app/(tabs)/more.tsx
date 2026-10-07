@@ -102,7 +102,7 @@ export default function More() {
               <RowDivider />
             </>
           )}
-          <ListRow tint={SECTION.account} icon="smartphone" title="My devices" onPress={() => router.push('/devices')} />
+          <ListRow tint={SECTION.account} icon="smartphone" title={user?.role === 'ADMIN' ? 'Devices & logins' : 'My devices'} onPress={() => router.push('/devices')} />
           <RowDivider />
           <ListRow tint={SECTION.account} icon="lock" title="Screen lock" onPress={() => router.push('/screen-lock')} />
           <RowDivider />

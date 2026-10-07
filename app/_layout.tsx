@@ -152,7 +152,7 @@ export default function RootLayout() {
             <Stack.Screen name="faqs" options={{ headerShown: true, title: 'FAQs' }} />
             <Stack.Screen name="walk-in" options={{ headerShown: true, title: 'Add customer' }} />
             <Stack.Screen name="pricing" options={{ headerShown: true, title: 'Lens pricing' }} />
-            <Stack.Screen name="devices" options={{ headerShown: true, title: 'My devices' }} />
+            <Stack.Screen name="devices" options={{ headerShown: true, title: 'Devices' }} />
             <Stack.Screen name="suppliers" options={{ headerShown: true, title: 'Suppliers' }} />
             <Stack.Screen name="purchases/index" options={{ headerShown: true, title: 'Supplier invoices' }} />
             <Stack.Screen name="purchases/new" options={{ headerShown: true, title: 'Record a delivery' }} />
