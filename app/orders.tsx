@@ -184,7 +184,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
       <View style={styles.tabs}>
         {sale.waId && (
           <Button label="WhatsApp" icon="message-circle" variant="secondary" style={{ flex: 1 }}
-            onPress={() => Linking.openURL(`https://wa.me/${sale.waId}`)} />
+            onPress={() => router.push(`/chat/${sale.waId}`)} />
         )}
         {sale.leadId && user?.role === 'ADMIN' && (
           <Button label="Lead history" icon="clock" variant="secondary" style={{ flex: 1 }}

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { RxTable } from '../../src/components/RxTable'
@@ -93,8 +93,10 @@ export default function LeadDetail() {
     }
   }
 
-  const sendLink = () => Linking.openURL(`https://wa.me/${number}?text=${encodeURIComponent(
-    `Hi${first ? ' ' + first : ''}! Here's your personal link to pick your lenses — no need to verify again:\n${data.lensLink}`)}`)
+  // Opens the business-number chat with the link typed in (wa.me would open the staff member's
+  // personal WhatsApp).
+  const sendLink = () => router.push({ pathname: '/chat/[waId]', params: { waId: number, text:
+    `Hi${first ? ' ' + first : ''}! Here's your personal link to pick your lenses — no need to verify again:\n${data.lensLink}` } })
 
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
@@ -110,7 +112,7 @@ export default function LeadDetail() {
       </View>
 
       <View style={styles.actions}>
-        <Button label="WhatsApp" icon="message-circle" onPress={() => Linking.openURL(`https://wa.me/${number}`)} style={{ flex: 1 }} />
+        <Button label="WhatsApp" icon="message-circle" onPress={() => router.push(`/chat/${number}`)} style={{ flex: 1 }} />
         <Button label="Call" icon="phone" variant="secondary" onPress={() => Linking.openURL(`tel:+${number}`)} style={{ flex: 1 }} />
       </View>
       <Button label="Send their personal lens link" icon="link" variant="ghost" onPress={sendLink} />
