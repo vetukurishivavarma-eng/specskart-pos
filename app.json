@@ -2,14 +2,15 @@
   "expo": {
     "name": "Specskart POS",
     "slug": "specskart-pos",
-    "version": "1.15.0",
+    "version": "1.16.0",
     "orientation": "portrait",
     "scheme": "specskartpos",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.specskart.pos",
-      "versionCode": 20,
+      "versionCode": 21,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.REQUEST_INSTALL_PACKAGES"
