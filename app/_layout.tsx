@@ -22,6 +22,8 @@ import { useAuth } from '../src/lib/auth'
 import { LOCK_AFTER_BACKGROUND_MS, useScreenLock } from '../src/lib/screenLock'
 import { startOfflineQueueWatcher } from '../src/lib/offlineQueue'
 import { useReminder } from '../src/lib/reminder'
+import * as Notifications from 'expo-notifications'
+import { pathOf, registerForOrderNotifications } from '../src/lib/push'
 
 // Shop staff work on patchy connections; don't hammer a dying link, and refresh
 // on regaining focus/reconnect since prices and orders are shared across devices.
@@ -53,6 +55,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const pending = useRef<string | null>(null)
 
   useEffect(() => { hydrate(); hydrateStore() }, [])
+
+  // Every sign-in (and every launch while signed in) registers this phone for order notifications.
+  useEffect(() => { if (token) void registerForOrderNotifications() }, [token])
+
+  // Tapping an order notification opens that order -- also from a cold start. Signed out, the
+  // effect above parks the destination and replays it after login.
+  const tapped = Notifications.useLastNotificationResponse()
+  const handledTap = useRef<string | null>(null)
+  useEffect(() => {
+    if (!hydrated || !tapped) return
+    const id = tapped.notification.request.identifier
+    const path = pathOf(tapped)
+    if (!path || handledTap.current === id) return
+    handledTap.current = id
+    router.push(path as never)
+  }, [hydrated, tapped])
 
   useEffect(() => {
     if (!hydrated) return
