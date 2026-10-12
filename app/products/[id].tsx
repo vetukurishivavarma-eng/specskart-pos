@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
-import { Image, ScrollView, Text, View } from 'react-native'
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { api, apiError, assetUrl } from '../../src/lib/api'
 import { colors, font, spacing } from '../../src/theme'
 import { Badge, Button, Field, Loading, Select, Title } from '../../src/ui/components'
@@ -72,7 +72,7 @@ export default function ProductDetail() {
   const [name, setName] = useState('')
   const [brand, setBrand] = useState('')
   const [shape, setShape] = useState('')
-  const [photo, setPhoto] = useState<string | null>(null) // picked, not uploaded yet
+  const [photos, setPhotos] = useState<string[]>([]) // picked, not uploaded yet
   const [sku, setSku] = useState('')
   const [barcode, setBarcode] = useState('')
   const [price, setPrice] = useState('')
@@ -101,9 +101,24 @@ export default function ProductDetail() {
   async function pick(camera: boolean) {
     const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!perm.granted) { setError('Allow access to add a photo.'); return }
-    const opts = { mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.7, allowsEditing: true }
-    const r = camera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts)
-    if (!r.canceled) setPhoto(r.assets[0].uri)
+    // Android can't crop a multi-pick, so cropping stays on the camera path only.
+    const r = camera
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsMultipleSelection: true })
+    if (!r.canceled) setPhotos((cur) => [...cur, ...r.assets.map((a) => a.uri)])
+  }
+
+  function removeSaved(imageId: string) {
+    Alert.alert('Remove this photo?', 'It comes off the website straight away.', [
+      { text: 'Keep', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => {
+        try {
+          await api.delete(`/admin/catalog/products/${id}/images/${imageId}`)
+          qc.invalidateQueries({ queryKey: ['catalog-product', id] })
+          qc.invalidateQueries({ queryKey: ['catalog-products'] })
+        } catch (e) { Alert.alert('Could not remove', apiError(e)) }
+      } },
+    ])
   }
 
   async function save() {
@@ -140,9 +155,10 @@ export default function ProductDetail() {
       const saved = creating
         ? (await api.post<AdminProduct>('/admin/catalog/products', body)).data
         : (await api.put<AdminProduct>(`/admin/catalog/products/${id}`, body)).data
-      if (photo) {
+      // One upload per photo, in order -- the backend appends each at the next sort slot.
+      for (const uri of photos) {
         const form = new FormData()
-        form.append('file', { uri: photo, name: 'frame.jpg', type: 'image/jpeg' } as any)
+        form.append('file', { uri, name: 'frame.jpg', type: 'image/jpeg' } as any)
         await api.post(`/admin/catalog/products/${saved.id}/images`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
       }
       qc.invalidateQueries({ queryKey: ['catalog-product', id] })
@@ -162,10 +178,21 @@ export default function ProductDetail() {
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
         {(product?.images ?? []).map((i) => (
-          <Image key={i.id} source={{ uri: assetUrl(i.url) }} style={{ width: 88, height: 88, borderRadius: 8 }} />
+          <Pressable key={i.id} onLongPress={() => removeSaved(i.id)}>
+            <Image source={{ uri: assetUrl(i.url) }} style={{ width: 88, height: 88, borderRadius: 8 }} />
+          </Pressable>
         ))}
-        {photo && <Image source={{ uri: photo }} style={{ width: 88, height: 88, borderRadius: 8, opacity: 0.8 }} />}
+        {photos.map((uri, n) => (
+          <Pressable key={uri} onPress={() => setPhotos((cur) => cur.filter((_, k) => k !== n))}>
+            <Image source={{ uri }} style={{ width: 88, height: 88, borderRadius: 8, opacity: 0.8 }} />
+          </Pressable>
+        ))}
       </View>
+      {((product?.images.length ?? 0) > 0 || photos.length > 0) && (
+        <Text style={{ fontFamily: font.regular, fontSize: 12, color: colors.textFaint }}>
+          First photo is the cover. Tap a new photo to drop it; long-press a saved one to remove it.
+        </Text>
+      )}
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <Button label="Take photo" icon="camera" variant="secondary" onPress={() => pick(true)} style={{ flex: 1 }} />
         <Button label="From gallery" icon="image" variant="secondary" onPress={() => pick(false)} style={{ flex: 1 }} />
