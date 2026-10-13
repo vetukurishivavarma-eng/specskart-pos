@@ -186,7 +186,7 @@ function SaleCard({ sale, onDone }: { sale: SaleView; onDone: () => void }) {
           <Button label="WhatsApp" icon="message-circle" variant="secondary" style={{ flex: 1 }}
             onPress={() => router.push(`/chat/${sale.waId}`)} />
         )}
-        {sale.leadId && user?.role === 'ADMIN' && (
+        {sale.leadId && (
           <Button label="Lead history" icon="clock" variant="secondary" style={{ flex: 1 }}
             onPress={() => router.push(`/lead/${sale.leadId}`)} />
         )}
