@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import { ScrollView, View } from 'react-native'
 import { useActiveStore } from '../../src/lib/activeStore'
 import { useAuth } from '../../src/lib/auth'
+import { api } from '../../src/lib/api'
 import { spacing } from '../../src/theme'
 import { Button, Card, ListRow, RowDivider, SectionLabel, Subtitle, Title } from '../../src/ui/components'
 
@@ -132,7 +133,12 @@ export default function More() {
         </Card>
       </View>
 
-      <Button label="Sign out" variant="ghost" onPress={() => logout()} />
+      <Button label="Sign out" variant="ghost" onPress={async () => {
+        // Free this phone's hold on the login first, or the next phone gets "already signed in
+        // elsewhere". Best effort: offline, an admin can still release it from Devices.
+        await api.post('/admin/pos/devices/me/sign-out', null, { timeout: 8000 }).catch(() => {})
+        await logout()
+      }} />
     </ScrollView>
   )
 }
