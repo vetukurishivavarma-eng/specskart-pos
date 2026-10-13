@@ -85,8 +85,12 @@ export default function More() {
         <Card>
           <ListRow tint={SECTION.stock} icon="list" title="Sales history" onPress={() => router.push('/sales')} />
           <RowDivider />
-          <ListRow tint={SECTION.stock} icon="tag" title="Store pricing" subtitle="Per-shop price overrides" onPress={() => router.push('/store-pricing')} />
-          <RowDivider />
+          {user?.role === 'ADMIN' && (
+            <>
+              <ListRow tint={SECTION.stock} icon="tag" title="Store pricing" subtitle="Per-shop price overrides" onPress={() => router.push('/store-pricing')} />
+              <RowDivider />
+            </>
+          )}
           <ListRow tint={SECTION.stock} icon="activity" title="Stock movements" subtitle="Audit trail" onPress={() => router.push('/movements')} />
           <RowDivider />
           <ListRow tint={SECTION.stock} icon="upload" title="Bulk stock upload" subtitle="Paste in counts from a stock-take" onPress={() => router.push('/stock-import')} />
