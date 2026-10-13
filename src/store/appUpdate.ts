@@ -348,9 +348,9 @@ NetInfo.addEventListener((state) => {
 })
 
 /**
- * Whether the APK should start downloading on its own — only on a connection that costs the
- * shop nothing. On mobile data the size is put in front of them and they choose, which is the
- * one place in this flow where being automatic would take a decision that is not ours.
+ * Whether the APK should start downloading on its own. An optional update only does on a
+ * connection that costs the shop nothing; a required one starts on mobile data too — the owner
+ * marked it mandatory, so the till can't be used until it's in anyway.
  */
 export function shouldAutoDownload(state: AppUpdateState): boolean {
   return (
@@ -358,7 +358,7 @@ export function shouldAutoDownload(state: AppUpdateState): boolean {
     state.install.kind === 'idle' &&
     state.release !== null &&
     state.release.buildNumber !== autoStarted &&
-    state.metered === false
+    (state.metered === false || state.status === 'required')
   )
 }
 
