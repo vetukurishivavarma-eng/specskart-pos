@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { FlatList, Text } from 'react-native'
 import { api } from '../src/lib/api'
+import { useAuth } from '../src/lib/auth'
 import { useActiveStore } from '../src/lib/activeStore'
 import { ProductRank } from '../src/lib/pos'
 import { colors, font, formatKwacha, spacing } from '../src/theme'
@@ -21,6 +22,8 @@ const RANGES = [
 
 export default function Analytics() {
   const store = useActiveStore((s) => s.store)
+  // profit reveals cost price, which is admin-only (the backend zeroes it for staff too)
+  const admin = useAuth((s) => s.user?.role === 'ADMIN')
   const [metric, setMetric] = useState('revenue')
   const [days, setDays] = useState('30')
 
@@ -48,7 +51,7 @@ export default function Analytics() {
       ListHeaderComponent={
         <>
           <Title style={{ marginBottom: spacing.sm }}>Top products — {store.name}</Title>
-          <Select value={metric} options={METRICS as any} onChange={setMetric} />
+          <Select value={metric} options={(admin ? METRICS : METRICS.filter((m) => m.value !== 'profit')) as any} onChange={setMetric} />
           <Select value={days} options={RANGES as any} onChange={setDays} />
         </>
       }

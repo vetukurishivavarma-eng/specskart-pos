@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { api, apiError, assetUrl } from '../../src/lib/api'
+import { useAuth } from '../../src/lib/auth'
 import { colors, font, spacing } from '../../src/theme'
 import { Badge, Button, Field, Loading, Select, Title } from '../../src/ui/components'
 
@@ -25,7 +26,7 @@ type AdminProduct = {
   sku: string | null
   barcode: string | null
   priceMinor: number
-  costPriceMinor: number
+  costPriceMinor: number | null // null for staff: cost price is admin-only
   stockQty: number
   status: string
   brand: string | null
@@ -77,6 +78,7 @@ export default function ProductDetail() {
   const [barcode, setBarcode] = useState('')
   const [price, setPrice] = useState('')
   const [cost, setCost] = useState('')
+  const admin = useAuth((s) => s.user?.role === 'ADMIN')
   const [stockQty, setStockQty] = useState('')
   const [status, setStatus] = useState('ACTIVE')
   const [busy, setBusy] = useState(false)
@@ -91,7 +93,7 @@ export default function ProductDetail() {
     setSku(product.sku ?? '')
     setBarcode(product.barcode ?? '')
     setPrice((product.priceMinor / 100).toFixed(2))
-    setCost((product.costPriceMinor / 100).toFixed(2))
+    setCost(((product.costPriceMinor ?? 0) / 100).toFixed(2))
     setStockQty(String(product.stockQty))
     setStatus(product.status)
   }, [product])
@@ -147,7 +149,7 @@ export default function ProductDetail() {
       sku: sku.trim() || null,
       barcode: barcode.trim() || null,
       priceMinor: Math.round(Number(price || 0) * 100),
-      costPriceMinor: Math.round(Number(cost || 0) * 100),
+      costPriceMinor: admin ? Math.round(Number(cost || 0) * 100) : null,
       stockQty: Number(stockQty || 0),
       status,
     }
@@ -204,7 +206,7 @@ export default function ProductDetail() {
       <Select label="Frame shape" value={shape} options={SHAPES as any} onChange={setShape} />
       <Field label="Barcode" value={barcode} onChangeText={setBarcode} />
       <Field label="Price (K)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
-      <Field label="Cost price (K)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />
+      {admin && <Field label="Cost price (K)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />}
       <Field label="Stock quantity" value={stockQty} onChangeText={setStockQty} keyboardType="number-pad" />
       {/* Once a shop carries a map pin, the website's count IS that shop's shelf and the
           backend ignores this field -- see AdminCatalogService.applyProduct. Say so rather

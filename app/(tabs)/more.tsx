@@ -70,8 +70,12 @@ export default function More() {
         <Card>
           <ListRow tint={SECTION.frames} icon="truck" title="Suppliers" onPress={() => router.push('/suppliers')} />
           <RowDivider />
-          <ListRow tint={SECTION.frames} icon="file-text" title="Supplier invoices" subtitle="Deliveries & what's owed" onPress={() => router.push('/purchases')} />
-          <RowDivider />
+          {user?.role === 'ADMIN' && (
+            <>
+              <ListRow tint={SECTION.frames} icon="file-text" title="Supplier invoices" subtitle="Deliveries & what's owed" onPress={() => router.push('/purchases')} />
+              <RowDivider />
+            </>
+          )}
           <ListRow tint={SECTION.frames} icon="bar-chart-2" title="Day report" subtitle="Today's Z-report" onPress={() => router.push('/day-report')} />
         </Card>
       </View>
@@ -89,7 +93,7 @@ export default function More() {
           <RowDivider />
           <ListRow tint={SECTION.stock} icon="alert-triangle" title="Reorder suggestions" onPress={() => router.push('/reorder')} />
           <RowDivider />
-          <ListRow tint={SECTION.stock} icon="trending-up" title="Top products" subtitle="Revenue, profit & quantity" onPress={() => router.push('/analytics')} />
+          <ListRow tint={SECTION.stock} icon="trending-up" title="Top products" subtitle={user?.role === 'ADMIN' ? 'Revenue, profit & quantity' : 'Revenue & quantity'} onPress={() => router.push('/analytics')} />
         </Card>
       </View>
 
