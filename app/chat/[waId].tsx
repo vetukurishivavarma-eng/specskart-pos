@@ -107,7 +107,8 @@ export default function ChatScreen() {
                   <Image source={{ uri, headers: { Authorization: `Bearer ${token}` } }} style={styles.photo} resizeMode="cover" />
                 </Pressable>
               ) : (
-                <Button label={opening === m.mediaId ? 'Opening…' : `${MEDIA_LABEL[m.type] ?? 'File'} — tap to open`}
+                <Button label={opening === m.mediaId ? 'Opening…' : // a document's body is its filename; otherwise it's just "[video]" etc.
+                  m.body && !m.body.startsWith('[') ? m.body : `${MEDIA_LABEL[m.type] ?? 'File'} — tap to open`}
                   icon="paperclip" variant="secondary" disabled={opening !== null}
                   onPress={() => openMedia(uri, m.mediaId!)} />
               )
