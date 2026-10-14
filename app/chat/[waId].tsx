@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Stack, useLocalSearchParams } from 'expo-router'
+import { Directory, File, Paths } from 'expo-file-system'
+import * as IntentLauncher from 'expo-intent-launcher'
 import { useEffect, useRef, useState } from 'react'
 import { Image, KeyboardAvoidingView, Modal, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { api, apiError, assetUrl } from '../../src/lib/api'
@@ -20,12 +22,33 @@ type Chat = {
  * a wa.me link opens the staff member's personal WhatsApp instead. Replies come back through the
  * webhook, so this screen polls while it is open.
  */
+const MEDIA_LABEL: Record<string, string> = { document: 'Document', video: 'Video', audio: 'Voice note' }
+
 export default function ChatScreen() {
   const { waId, text } = useLocalSearchParams<{ waId: string; text?: string }>()
   const qc = useQueryClient()
   const [draft, setDraft] = useState(typeof text === 'string' ? text : '')
   const [error, setError] = useState<string | null>(null)
   const [viewing, setViewing] = useState<string | null>(null)
+  const [opening, setOpening] = useState<string | null>(null)
+
+  // Download (with our login) to the cache, then hand it to whichever app opens that type.
+  const openMedia = async (uri: string, mediaId: string) => {
+    setOpening(mediaId)
+    try {
+      const dir = new Directory(Paths.cache, 'chat-media')
+      if (!dir.exists) dir.create()
+      const file = await File.downloadFileAsync(uri, dir, { headers: { Authorization: `Bearer ${token}` }, idempotent: true })
+      await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+        data: file.contentUri, type: file.type || '*/*', flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+      })
+      setError(null)
+    } catch {
+      setError("Couldn't open that file — WhatsApp may no longer have it, or no app on this phone opens it.")
+    } finally {
+      setOpening(null)
+    }
+  }
   const scroll = useRef<ScrollView>(null)
   const token = useAuth((s) => s.token)
 
@@ -76,13 +99,17 @@ export default function ChatScreen() {
         )}
         {data.messages.map((m, i) => (
           <View key={i} style={[styles.bubble, m.direction === 'INBOUND' ? styles.in : styles.out]}>
-            {m.type === 'image' && m.mediaId ? (() => {
-              // the server fetches it from WhatsApp; tap opens it full screen
+            {m.mediaId ? (() => {
+              // the server fetches it from WhatsApp; a photo/sticker shows here, anything else opens in the phone's app
               const uri = assetUrl(`/api/admin/chat/${data.waId}/media/${m.mediaId}`)
-              return (
+              return m.type === 'image' || m.type === 'sticker' ? (
                 <Pressable onPress={() => setViewing(uri)}>
                   <Image source={{ uri, headers: { Authorization: `Bearer ${token}` } }} style={styles.photo} resizeMode="cover" />
                 </Pressable>
+              ) : (
+                <Button label={opening === m.mediaId ? 'Opening…' : `${MEDIA_LABEL[m.type] ?? 'File'} — tap to open`}
+                  icon="paperclip" variant="secondary" disabled={opening !== null}
+                  onPress={() => openMedia(uri, m.mediaId!)} />
               )
             })() : <Text style={styles.body}>{m.body || '(media)'}</Text>}
             <Text style={styles.time}>
