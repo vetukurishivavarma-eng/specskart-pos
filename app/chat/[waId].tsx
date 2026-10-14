@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { api, apiError } from '../../src/lib/api'
+import { Image, KeyboardAvoidingView, Modal, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { api, apiError, assetUrl } from '../../src/lib/api'
+import { useAuth } from '../../src/lib/auth'
 import { colors, font, radius, spacing } from '../../src/theme'
 import { Badge, Button, Field, Loading } from '../../src/ui/components'
 
 type Chat = {
   waId: string; name: string | null; known: boolean
   windowOpen: boolean; templateAvailable: boolean; botQuietUntil: string | null
-  messages: { at: string; direction: 'INBOUND' | 'OUTBOUND'; body: string; type: string }[]
+  messages: { at: string; direction: 'INBOUND' | 'OUTBOUND'; body: string; type: string; mediaId?: string }[]
 }
 
 /**
@@ -24,7 +25,9 @@ export default function ChatScreen() {
   const qc = useQueryClient()
   const [draft, setDraft] = useState(typeof text === 'string' ? text : '')
   const [error, setError] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<string | null>(null)
   const scroll = useRef<ScrollView>(null)
+  const token = useAuth((s) => s.token)
 
   const key = ['chat', waId]
   const { data, isLoading } = useQuery({
@@ -73,7 +76,15 @@ export default function ChatScreen() {
         )}
         {data.messages.map((m, i) => (
           <View key={i} style={[styles.bubble, m.direction === 'INBOUND' ? styles.in : styles.out]}>
-            <Text style={styles.body}>{m.body || '(media)'}</Text>
+            {m.type === 'image' && m.mediaId ? (() => {
+              // the server fetches it from WhatsApp; tap opens it full screen
+              const uri = assetUrl(`/api/admin/chat/${data.waId}/media/${m.mediaId}`)
+              return (
+                <Pressable onPress={() => setViewing(uri)}>
+                  <Image source={{ uri, headers: { Authorization: `Bearer ${token}` } }} style={styles.photo} resizeMode="cover" />
+                </Pressable>
+              )
+            })() : <Text style={styles.body}>{m.body || '(media)'}</Text>}
             <Text style={styles.time}>
               {m.direction === 'OUTBOUND' ? (m.type === 'agent' ? 'Staff · ' : 'Bot · ') : ''}
               {new Date(m.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -81,6 +92,13 @@ export default function ChatScreen() {
           </View>
         ))}
       </ScrollView>
+
+      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+        <Pressable style={styles.viewer} onPress={() => setViewing(null)}>
+          {viewing && <Image source={{ uri: viewing, headers: { Authorization: `Bearer ${token}` } }}
+            style={{ width: '100%', height: '100%' }} resizeMode="contain" />}
+        </Pressable>
+      </Modal>
 
       <View style={styles.composer}>
         {error && <Text style={styles.error}>{error}</Text>}
@@ -119,6 +137,8 @@ const styles = StyleSheet.create({
   in: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   out: { alignSelf: 'flex-end', backgroundColor: colors.primarySoft },
   body: { fontFamily: font.regular, fontSize: 14, color: colors.text },
+  photo: { width: 220, height: 220, borderRadius: radius.md, backgroundColor: colors.border },
+  viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   time: { fontFamily: font.regular, fontSize: 10, color: colors.textFaint },
   composer: { padding: spacing.lg, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   row: { flexDirection: 'row', gap: spacing.sm },
