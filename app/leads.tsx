@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { FlatList, Text, TextInput, View } from 'react-native'
 import { api } from '../src/lib/api'
 import { colors, font, radius, spacing } from '../src/theme'
-import { Badge, Card, EmptyState, ListRow, Loading, Select, Title } from '../src/ui/components'
+import { Badge, Button, Card, EmptyState, ListRow, Loading, Select, Title } from '../src/ui/components'
 
 // Mirrors the backend's AcquisitionSource enum. Filtering is server-side, so the count
 // shown is the real total for that source, not just what has been scrolled into view.
@@ -64,6 +64,7 @@ export default function Leads() {
       ListHeaderComponent={
         <View style={{ marginBottom: spacing.md, gap: spacing.sm }}>
           <Title>Leads</Title>
+          <Button label="New chat" icon="message-circle" variant="secondary" onPress={() => router.push('/chat/new')} />
           <Select value={source} options={SOURCES as any} onChange={setSource} />
           <TextInput
             value={query}
