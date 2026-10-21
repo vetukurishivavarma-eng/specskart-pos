@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, FlatList, RefreshControl, Text, View } from 'react-native'
 import { api, apiError } from '../src/lib/api'
 import { colors, font, spacing } from '../src/theme'
@@ -36,6 +36,14 @@ export default function Spins() {
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [sentTo, setSentTo] = useState<string | null>(null)
+  const [resendAt, setResendAt] = useState(0) // the server allows another code after this (ms)
+  const [, tick] = useState(0)
+  const wait = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000))
+  useEffect(() => {
+    if (!wait) return
+    const t = setInterval(() => tick((n) => n + 1), 1000)
+    return () => clearInterval(t)
+  }, [wait > 0])
   const { data, refetch, isRefetching } = useQuery({
     queryKey: ['spins'],
     queryFn: async () => (await api.get<Spin[]>('/admin/spins')).data,
@@ -63,8 +71,10 @@ export default function Spins() {
   async function sendCode(s: Spin) {
     setBusy(true)
     try {
-      const r = await api.post<{ sentTo: string }>(`/admin/spins/code/${encodeURIComponent(s.code)}/send-otp`, { phone })
+      const r = await api.post<{ sentTo: string; resendInSeconds: number; sendsLeft: number }>(
+        `/admin/spins/code/${encodeURIComponent(s.code)}/send-otp`, { phone })
       setSentTo(r.data.sentTo)
+      setResendAt(Date.now() + r.data.resendInSeconds * 1000)
     } catch (e) {
       Alert.alert('Could not send the code', apiError(e))
     } finally {
@@ -113,8 +123,9 @@ export default function Spins() {
                 <>
                   <Field label="Their WhatsApp number" value={phone} onChangeText={setPhone} keyboardType="phone-pad"
                     hint="Ask the customer. It must be the number they won with." />
-                  <Button label={sentTo ? 'Send code again' : 'Send verification code'} icon="send" variant={sentTo ? 'ghost' : undefined}
-                    loading={busy && !sentTo} disabled={!phone.trim()} onPress={() => sendCode(found)} />
+                  <Button label={wait ? `Send again in ${wait}s` : sentTo ? 'Send code again' : 'Send verification code'} icon="send"
+                    variant={sentTo ? 'ghost' : undefined} loading={busy && !sentTo} disabled={!phone.trim() || wait > 0}
+                    onPress={() => sendCode(found)} />
                   {sentTo && (
                     <>
                       <Field label={`6-digit code sent to ${sentTo}`} value={otp} keyboardType="number-pad"
