@@ -74,7 +74,12 @@ export default function Stock() {
         <Row
           row={item}
           storeId={store.id}
-          onSaved={() => qc.invalidateQueries({ queryKey: ['pos-inventory', store.id] })}
+          onSaved={() => {
+            qc.invalidateQueries({ queryKey: ['pos-inventory', store.id] })
+            // the product screens show the same count -- don't leave them on the old one
+            qc.invalidateQueries({ queryKey: ['catalog-products'] })
+            qc.invalidateQueries({ queryKey: ['catalog-product'] })
+          }}
         />
       )}
     />

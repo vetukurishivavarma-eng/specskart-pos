@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { FlatList, TextInput, View } from 'react-native'
+import { FlatList, RefreshControl, TextInput, View } from 'react-native'
 import { api } from '../../src/lib/api'
 import { FrameProduct } from '../../src/lib/pos'
 import { colors, font, formatKwacha, radius, spacing } from '../../src/theme'
@@ -11,7 +11,7 @@ export default function Products() {
   const router = useRouter()
   const [query, setQuery] = useState('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['catalog-products'],
     queryFn: async () => (await api.get<FrameProduct[]>('/admin/catalog/products')).data,
   })
@@ -30,6 +30,7 @@ export default function Products() {
       contentContainerStyle={{ padding: spacing.lg }}
       data={results}
       keyExtractor={(p) => p.id}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
       ItemSeparatorComponent={RowDivider}
       ListHeaderComponent={
         <View style={{ marginBottom: spacing.md }}>

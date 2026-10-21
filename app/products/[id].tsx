@@ -165,6 +165,7 @@ export default function ProductDetail() {
       }
       qc.invalidateQueries({ queryKey: ['catalog-product', id] })
       qc.invalidateQueries({ queryKey: ['catalog-products'] })
+      qc.invalidateQueries({ queryKey: ['pos-inventory'] }) // a stock change here moves the shop shelf
       router.back()
     } catch (e) {
       setError(apiError(e))
@@ -208,11 +209,9 @@ export default function ProductDetail() {
       <Field label="Price (K)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
       {admin && <Field label="Cost price (K)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />}
       <Field label="Stock quantity" value={stockQty} onChangeText={setStockQty} keyboardType="number-pad" />
-      {/* Once a shop carries a map pin, the website's count IS that shop's shelf and the
-          backend ignores this field -- see AdminCatalogService.applyProduct. Say so rather
-          than let someone type a number that quietly does nothing. */}
+      {/* With the shop pinned, a change here is a stock adjustment on its shelf (AdminCatalogService.setShelf). */}
       <Text style={{ fontFamily: font.regular, fontSize: 12, color: colors.textFaint }}>
-        Stock is counted on the shop&apos;s shelf. Record a delivery or a stock adjustment to change it.
+        This is the shop&apos;s shelf count -- the same number as on the Stock page and the website.
       </Text>
       <Select label="Status" value={status} options={STATUSES as any} onChange={setStatus} />
 
