@@ -167,6 +167,7 @@ export default function RootLayout() {
             <Stack.Screen name="orders" options={{ headerShown: true, title: 'Web orders' }} />
             <Stack.Screen name="leads" options={{ headerShown: true, title: 'Leads' }} />
             <Stack.Screen name="bookings" options={{ headerShown: true, title: 'Eye test bookings' }} />
+            <Stack.Screen name="spins" options={{ headerShown: true, title: 'Spin & Win' }} />
             <Stack.Screen name="lead/[id]" options={{ headerShown: true, title: 'Lead' }} />
             <Stack.Screen name="chat/[waId]" options={{ headerShown: true, title: 'WhatsApp' }} />
             <Stack.Screen name="chat/new" options={{ headerShown: true, title: 'New chat' }} />

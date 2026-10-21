@@ -39,6 +39,8 @@ export default function More() {
           <ListRow tint={SECTION.customers} icon="users" title="Leads" subtitle="Every lead, their number & where they came from" onPress={() => router.push('/leads')} />
           <RowDivider />
           <ListRow tint={SECTION.customers} icon="eye" title="Eye test bookings" subtitle="Who booked a free check-up from WhatsApp" onPress={() => router.push('/bookings')} />
+          <RowDivider />
+          <ListRow tint={SECTION.customers} icon="gift" title="Spin & Win codes" subtitle="Check a customer's prize code and mark it used" onPress={() => router.push('/spins')} />
           {user?.role === 'ADMIN' && (
             <>
               <RowDivider />
