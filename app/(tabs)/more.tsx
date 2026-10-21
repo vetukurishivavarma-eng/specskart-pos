@@ -45,6 +45,8 @@ export default function More() {
             <>
               <RowDivider />
               <ListRow tint={SECTION.customers} icon="help-circle" title="WhatsApp FAQs" subtitle="Questions & answers customers see in the chat" onPress={() => router.push('/faqs')} />
+              <RowDivider />
+              <ListRow tint={SECTION.customers} icon="radio" title="WhatsApp broadcast" subtitle="Send an approved template to many customers" onPress={() => router.push('/broadcast')} />
             </>
           )}
         </Card>
