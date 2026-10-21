@@ -15,6 +15,8 @@ const READY = [
     template: 'spin_and_win',
     title: 'Spin & Win',
     text: '🎁 New at Specskart Opticians: Spin & Win! Every spin wins a prize: K100 off photochromatic lenses, free sunglasses, 20% off a second frame and more. Tap Spin below to play.',
+    // sent instead (free) to customers who messaged in the last 24h; only the rest get the paid template
+    free: '🎁 New at Specskart Opticians: Spin & Win! Every spin wins a prize: K100 off photochromatic lenses, free sunglasses, 20% off a second frame and more. Reply *Spin* to play.',
   },
 ]
 
@@ -33,7 +35,7 @@ export default function Broadcast() {
   const reset = () => { setReach(null); setResult(null) }
   const path = mode === 'ready' ? '/admin/whatsapp/broadcast' : '/admin/whatsapp/broadcast/text'
   const body = () => mode === 'ready'
-    ? { templateName: ready.template, bodyParams: [], excludeConverted: skipBuyers, optedInOnly: false, limit: 200 }
+    ? { templateName: ready.template, freeText: ready.free, bodyParams: [], excludeConverted: skipBuyers, optedInOnly: false, limit: 200 }
     : { text: text.trim(), excludeConverted: skipBuyers, limit: 200 }
 
   async function count() {
@@ -49,7 +51,7 @@ export default function Broadcast() {
 
   function send() {
     const n = Math.min(200, reach ?? 0)
-    const cost = mode === 'ready' ? '\n\nMeta charges a small fee per message delivered.' : ''
+    const cost = mode === 'ready' ? '\n\nCustomers who chatted in the last 24 hours get it free; for the rest Meta charges a small fee each.' : ''
     Alert.alert('Send this message?', `It goes to ${n} customer(s) on WhatsApp.${cost}`, [
       { text: 'Cancel', style: 'cancel' },
       {
