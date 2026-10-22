@@ -1,8 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { api, apiError } from '../src/lib/api'
 import { colors, font, radius, spacing } from '../src/theme'
-import { Button, Card, Field, Icon, Title, Toggle } from '../src/ui/components'
+import { Button, Card, Field, Icon, ListRow, Loading, Title, Toggle } from '../src/ui/components'
 
 type Result = { sent: number; failed: number; skippedOverCap: number }
 
@@ -21,6 +22,8 @@ const READY = [
 ]
 
 type Mode = 'ready' | 'own'
+type Who = 'all' | 'pick'
+type Lead = { id: string; name: string | null; whatsappNumber: string }
 
 /** Admin only (the server refuses anyone else): one message to many customers at once. */
 export default function Broadcast() {
@@ -28,15 +31,24 @@ export default function Broadcast() {
   const [ready, setReady] = useState(READY[0])
   const [text, setText] = useState('')
   const [skipBuyers, setSkipBuyers] = useState(false)
+  const [who, setWho] = useState<Who>('all')
+  const [picked, setPicked] = useState<Record<string, Lead>>({})
   const [reach, setReach] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
 
   const reset = () => { setReach(null); setResult(null) }
   const path = mode === 'ready' ? '/admin/whatsapp/broadcast' : '/admin/whatsapp/broadcast/text'
+  const pickedIds = Object.keys(picked)
+  const leadIds = who === 'pick' ? pickedIds : undefined
   const body = () => mode === 'ready'
-    ? { templateName: ready.template, freeText: ready.free, bodyParams: [], excludeConverted: skipBuyers, optedInOnly: false, limit: 200 }
-    : { text: text.trim(), excludeConverted: skipBuyers, limit: 200 }
+    ? { templateName: ready.template, freeText: ready.free, bodyParams: [], excludeConverted: skipBuyers, optedInOnly: false, limit: 200, leadIds }
+    : { text: text.trim(), excludeConverted: skipBuyers, limit: 200, leadIds }
+
+  function toggle(l: Lead) {
+    setPicked(({ [l.id]: had, ...rest }) => (had ? rest : pickedIds.length >= 200 ? rest : { ...rest, [l.id]: l }))
+    reset()
+  }
 
   async function count() {
     setBusy(true)
@@ -71,7 +83,7 @@ export default function Broadcast() {
     ])
   }
 
-  const canCount = mode === 'ready' || text.trim().length > 0
+  const canCount = (mode === 'ready' || text.trim().length > 0) && (who === 'all' || pickedIds.length > 0)
 
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }} keyboardShouldPersistTaps="handled">
@@ -106,6 +118,14 @@ export default function Broadcast() {
         </Card>
       )}
 
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Choice active={who === 'all'} icon="users" title="Everyone" sub="All customers it can reach"
+          onPress={() => { setWho('all'); reset() }} />
+        <Choice active={who === 'pick'} icon="check-square" title="Pick customers" sub={pickedIds.length ? `${pickedIds.length} picked` : 'Tick who gets it'}
+          onPress={() => { setWho('pick'); reset() }} />
+      </View>
+      {who === 'pick' && <Picker picked={picked} onToggle={toggle} />}
+
       <Toggle label="Skip customers who already bought" value={skipBuyers} onChange={(v) => { setSkipBuyers(v); reset() }} />
 
       <Button label="Check how many it reaches" icon="users" variant="secondary" loading={busy && reach === null}
@@ -135,6 +155,42 @@ export default function Broadcast() {
         Customers who replied STOP never get these, and nobody gets the same message twice.
       </Text>
     </ScrollView>
+  )
+}
+
+/** Search customers and tick who gets the message; ticks survive a new search. */
+function Picker({ picked, onToggle }: { picked: Record<string, Lead>; onToggle: (l: Lead) => void }) {
+  const [query, setQuery] = useState('')
+  const q = query.trim()
+  const { data, isLoading } = useQuery({
+    queryKey: ['broadcast-pick', q],
+    queryFn: async () => (await api.get<{ content: Lead[] }>('/admin/leads', { params: { page: 0, size: 30, q: q || undefined } })).data.content,
+  })
+  const chosen = Object.values(picked)
+  // picked people stay on top so they can be unticked without searching again
+  const rows = [...chosen, ...(data ?? []).filter((l) => !picked[l.id])]
+  return (
+    <Card style={{ gap: spacing.sm }}>
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search name or number"
+        placeholderTextColor={colors.textFaint}
+        style={{
+          height: 44, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md,
+          paddingHorizontal: spacing.md, fontFamily: font.medium, fontSize: 15, color: colors.text,
+          backgroundColor: colors.canvas,
+        }}
+      />
+      {isLoading && <Loading />}
+      {rows.map((l) => (
+        <ListRow key={l.id} icon={picked[l.id] ? 'check-square' : 'square'} title={l.name || 'Unknown'}
+          subtitle={`+${l.whatsappNumber.replace(/\D/g, '')}`} onPress={() => onToggle(l)} />
+      ))}
+      {!isLoading && rows.length === 0 && (
+        <Text style={{ fontFamily: font.medium, color: colors.textMuted }}>No customer matches that.</Text>
+      )}
+    </Card>
   )
 }
 
