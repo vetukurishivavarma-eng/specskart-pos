@@ -31,6 +31,7 @@ export default function Broadcast() {
   const [ready, setReady] = useState(READY[0])
   const [text, setText] = useState('')
   const [skipBuyers, setSkipBuyers] = useState(false)
+  const [localOnly, setLocalOnly] = useState(true) // the shop's customers are in Zambia; staff/test numbers abroad aren't
   const [who, setWho] = useState<Who>('all')
   const [picked, setPicked] = useState<Record<string, Lead>>({})
   const [reach, setReach] = useState<number | null>(null)
@@ -42,8 +43,8 @@ export default function Broadcast() {
   const pickedIds = Object.keys(picked)
   const leadIds = who === 'pick' ? pickedIds : undefined
   const body = () => mode === 'ready'
-    ? { templateName: ready.template, freeText: ready.free, bodyParams: [], excludeConverted: skipBuyers, optedInOnly: false, limit: 200, leadIds }
-    : { text: text.trim(), excludeConverted: skipBuyers, limit: 200, leadIds }
+    ? { templateName: ready.template, freeText: ready.free, bodyParams: [], excludeConverted: skipBuyers, optedInOnly: false, limit: 200, leadIds, localOnly }
+    : { text: text.trim(), excludeConverted: skipBuyers, limit: 200, leadIds, localOnly }
 
   function toggle(l: Lead) {
     setPicked(({ [l.id]: had, ...rest }) => (had ? rest : pickedIds.length >= 200 ? rest : { ...rest, [l.id]: l }))
@@ -126,6 +127,7 @@ export default function Broadcast() {
       </View>
       {who === 'pick' && <Picker picked={picked} onToggle={toggle} />}
 
+      <Toggle label="Zambian numbers only (+260)" value={localOnly} onChange={(v) => { setLocalOnly(v); reset() }} />
       <Toggle label="Skip customers who already bought" value={skipBuyers} onChange={(v) => { setSkipBuyers(v); reset() }} />
 
       <Button label="Check how many it reaches" icon="users" variant="secondary" loading={busy && reach === null}
