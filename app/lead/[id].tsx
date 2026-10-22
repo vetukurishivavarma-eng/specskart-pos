@@ -118,7 +118,7 @@ export default function LeadDetail() {
       </View>
       <Button label="Send their personal lens link" icon="link" variant="ghost" onPress={sendLink} />
 
-      <Prescriptions leadId={lead.id} />
+      <Prescriptions leadId={lead.id} phone={number} />
 
       <View>
         <SectionLabel>Lens orders</SectionLabel>
