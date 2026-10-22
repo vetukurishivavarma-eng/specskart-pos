@@ -217,6 +217,23 @@ export default function ProductDetail() {
 
       {error && <Text style={{ fontFamily: font.medium, color: colors.danger }}>{error}</Text>}
       <Button label={busy ? 'Saving…' : creating ? 'Add frame' : 'Save'} onPress={save} loading={busy} size="lg" />
+      {admin && !creating && (
+        <Button label="Delete frame" icon="trash-2" variant="ghost" onPress={() =>
+          Alert.alert('Delete this frame?', 'For a frame added twice by mistake. It comes off the website and the shop straight away.', [
+            { text: 'Keep', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: async () => {
+              try {
+                await api.delete(`/admin/catalog/products/${id}`)
+                qc.invalidateQueries({ queryKey: ['catalog-products'] })
+                qc.invalidateQueries({ queryKey: ['pos-inventory'] })
+                router.back()
+              } catch (e) {
+                // a frame that was already sold or moved keeps its history: hide it instead
+                Alert.alert('Could not delete', `${apiError(e)}\n\nIf it was already sold, set Status to Archived instead.`)
+              }
+            } },
+          ])} />
+      )}
     </ScrollView>
   )
 }
