@@ -12,6 +12,8 @@ import { LensOnBill, printSaleReceipt } from '../lib/receipt'
 import { useScanCapture } from '../lib/scanCapture'
 import { colors, font, formatKwacha, radius, spacing } from '../theme'
 import { Badge, Button, Card, Field, Icon, ListRow, Loading, QtyStepper, SectionLabel, Select, StatRow, Toggle } from '../ui/components'
+import { num } from '../lib/lens'
+import { LastPrescription, str } from './Prescriptions'
 
 const PAYMENT_METHODS = [
   { value: 'CASH', label: 'Cash' },
@@ -106,6 +108,9 @@ export default function CounterSale() {
     cylLeft: num(cylL),
     addPower: structure ? num(add) : null,
     lensStructure: structure || null,
+    // a bifocal/progressive with an axis off 90°/180° (±10°) is an Rx lens: different price
+    axisRight: int(axisR),
+    axisLeft: int(axisL),
   }
   const quote = useQuery({
     queryKey: ['lens-walk-in-quote', lensInputs],
@@ -329,6 +334,15 @@ export default function CounterSale() {
           <SectionLabel>Bill</SectionLabel>
           <Field label={withLens ? 'Customer name' : 'Customer name (optional)'} value={customerName} onChangeText={setCustomerName} placeholder={withLens ? 'Required for lenses' : undefined} />
           <Field label="Phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <LastPrescription phone={phone} onUse={(e) => {
+            setWithLens(true)
+            setSphR(str(e.sphRight)); setSphL(str(e.sphLeft)); setCylR(str(e.cylRight)); setCylL(str(e.cylLeft))
+            setAxisR(str(e.axisRight)); setAxisL(str(e.axisLeft)); setPd(e.pd ?? '')
+            const hasAdd = e.addPower != null && Number(e.addPower) > 0
+            setAdd(hasAdd ? str(e.addPower) : '')
+            // a typed-from-photo Rx doesn't say bifocal or progressive: staff pick it
+            setStructure(hasAdd ? (e.lensStructure ?? structure) : '')
+          }} />
           <Field label="Discount (K, optional)" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" />
           <Select label="Payment method" value={method} options={PAYMENT_METHODS as any} onChange={setMethod} />
           {withLens && !takesNow && (
@@ -373,7 +387,3 @@ function int(v: string): number | null {
 }
 
 /** Blank -> null; accepts "-2.50", "+2", "2,50". */
-function num(v: string): number | null {
-  const n = parseFloat(v.replace(',', '.'))
-  return Number.isNaN(n) ? null : n
-}

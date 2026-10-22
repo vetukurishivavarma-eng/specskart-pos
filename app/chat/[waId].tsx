@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { Directory, File, Paths } from 'expo-file-system'
 import * as IntentLauncher from 'expo-intent-launcher'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, KeyboardAvoidingView, Modal, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { api, apiError, assetUrl } from '../../src/lib/api'
 import { useAuth } from '../../src/lib/auth'
 import { colors, font, radius, spacing } from '../../src/theme'
+import { AuthedPhoto, downloadMedia } from '../../src/components/AuthedPhoto'
 import { Badge, Button, Field, Loading } from '../../src/ui/components'
 
 type Chat = {
@@ -24,43 +24,6 @@ type Chat = {
  */
 const MEDIA_LABEL: Record<string, string> = { document: 'Document', video: 'Video', audio: 'Voice note' }
 
-/** Customer media lives behind our login, so it's downloaded to the cache first (once) and shown/opened from there. */
-async function downloadMedia(uri: string, token: string | null) {
-  const dir = new Directory(Paths.cache, 'chat-media')
-  if (!dir.exists) dir.create()
-  return File.downloadFileAsync(uri, dir, { headers: { Authorization: `Bearer ${token}` }, idempotent: true })
-}
-
-/** A customer's photo: a loading box, then the photo -- or a visible error with retry, never a silent grey box. */
-function ChatPhoto({ uri, token, onOpen }: { uri: string; token: string | null; onOpen: (local: string) => void }) {
-  const [local, setLocal] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
-  const [attempt, setAttempt] = useState(0)
-
-  useEffect(() => {
-    let live = true
-    setFailed(false)
-    downloadMedia(uri, token)
-      .then((f) => { if (live) setLocal(f.uri) })
-      .catch(() => { if (live) setFailed(true) })
-    return () => { live = false }
-  }, [uri, token, attempt])
-
-  if (failed) {
-    return (
-      <Pressable style={[styles.photo, styles.photoMsg]} onPress={() => setAttempt((a) => a + 1)}>
-        <Text style={styles.muted}>Couldn't load this photo. Tap to try again.</Text>
-      </Pressable>
-    )
-  }
-  if (!local) return <View style={[styles.photo, styles.photoMsg]}><ActivityIndicator color={colors.textMuted} /></View>
-  return (
-    <Pressable onPress={() => onOpen(local)}>
-      <Image source={{ uri: local }} style={styles.photo} resizeMode="cover" onError={() => setFailed(true)} />
-    </Pressable>
-  )
-}
-
 export default function ChatScreen() {
   const { waId, text } = useLocalSearchParams<{ waId: string; text?: string }>()
   const qc = useQueryClient()
@@ -68,6 +31,21 @@ export default function ChatScreen() {
   const [error, setError] = useState<string | null>(null)
   const [viewing, setViewing] = useState<string | null>(null)
   const [opening, setOpening] = useState<string | null>(null)
+  const [rxSaved, setRxSaved] = useState<Record<string, 'saving' | 'saved'>>({})
+
+  // Keep the photo on the customer (our own copy -- WhatsApp deletes media after ~30 days).
+  const saveRx = async (mediaId: string) => {
+    setRxSaved((s) => ({ ...s, [mediaId]: 'saving' }))
+    try {
+      await api.post(`/admin/chat/${waId}/media/${mediaId}/prescription`)
+      setRxSaved((s) => ({ ...s, [mediaId]: 'saved' }))
+      qc.invalidateQueries({ queryKey: ['prescriptions'] })
+      setError(null)
+    } catch (e) {
+      setRxSaved(({ [mediaId]: _, ...s }) => s)
+      setError(apiError(e))
+    }
+  }
 
   // Download (with our login) to the cache, then hand it to whichever app opens that type.
   const openMedia = async (uri: string, mediaId: string) => {
@@ -138,7 +116,15 @@ export default function ChatScreen() {
               // the server fetches it from WhatsApp; a photo/sticker shows here, anything else opens in the phone's app
               const uri = assetUrl(`/api/admin/chat/${data.waId}/media/${m.mediaId}`)
               return m.type === 'image' || m.type === 'sticker' ? (
-                <ChatPhoto uri={uri} token={token} onOpen={setViewing} />
+                <View style={{ gap: spacing.xs }}>
+                  <AuthedPhoto uri={uri} token={token} onOpen={setViewing} />
+                  {m.direction === 'INBOUND' && m.type === 'image' && (
+                    <Button variant="ghost" icon={rxSaved[m.mediaId] === 'saved' ? 'check' : 'file-text'}
+                      label={rxSaved[m.mediaId] === 'saved' ? 'Saved as prescription' : 'Save as prescription'}
+                      loading={rxSaved[m.mediaId] === 'saving'} disabled={!!rxSaved[m.mediaId]}
+                      onPress={() => saveRx(m.mediaId!)} />
+                  )}
+                </View>
               ) : (
                 <Button label={opening === m.mediaId ? 'Opening…' : // a document's body is its filename; otherwise it's just "[video]" etc.
                   m.body && !m.body.startsWith('[') ? m.body : `${MEDIA_LABEL[m.type] ?? 'File'} — tap to open`}
@@ -198,8 +184,6 @@ const styles = StyleSheet.create({
   in: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   out: { alignSelf: 'flex-end', backgroundColor: colors.primarySoft },
   body: { fontFamily: font.regular, fontSize: 14, color: colors.text },
-  photo: { width: 220, height: 220, borderRadius: radius.md, backgroundColor: colors.border },
-  photoMsg: { alignItems: 'center', justifyContent: 'center', padding: spacing.md },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
   time: { fontFamily: font.regular, fontSize: 10, color: colors.textFaint },
   composer: { padding: spacing.lg, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },

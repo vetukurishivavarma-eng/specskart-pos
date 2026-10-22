@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Prescriptions } from '../../src/components/Prescriptions'
 import { RxTable } from '../../src/components/RxTable'
 import { api, apiError } from '../../src/lib/api'
 import { colors, font, formatKwacha, spacing } from '../../src/theme'
@@ -116,6 +117,8 @@ export default function LeadDetail() {
         <Button label="Call" icon="phone" variant="secondary" onPress={() => Linking.openURL(`tel:+${number}`)} style={{ flex: 1 }} />
       </View>
       <Button label="Send their personal lens link" icon="link" variant="ghost" onPress={sendLink} />
+
+      <Prescriptions leadId={lead.id} />
 
       <View>
         <SectionLabel>Lens orders</SectionLabel>

@@ -31,3 +31,9 @@ export type SaleView = {
   paidMinor: number
   balanceMinor: number
 }
+
+/** A typed power ("-2,50" or "-2.50") as a number; blank or junk -> null. */
+export function num(v: string): number | null {
+  const n = parseFloat(v.replace(',', '.'))
+  return Number.isNaN(n) ? null : n
+}
