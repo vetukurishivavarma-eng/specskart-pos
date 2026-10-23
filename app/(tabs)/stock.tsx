@@ -14,6 +14,7 @@ const KINDS = [
   { value: 'ALL', label: 'All' },
   { value: 'FRAME', label: 'Frames' },
   { value: 'LENS', label: 'Lenses' },
+  { value: 'ACCESSORY', label: 'Accessories' },
 ] as const
 
 export default function Stock() {

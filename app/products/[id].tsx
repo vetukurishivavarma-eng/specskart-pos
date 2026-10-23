@@ -30,6 +30,7 @@ type AdminProduct = {
   stockQty: number
   status: string
   brand: string | null
+  kind: string
   images: { id: string; url: string }[]
 }
 
@@ -56,7 +57,7 @@ const STATUSES = [
 ] as const
 
 export default function ProductDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, kind: newKind } = useLocalSearchParams<{ id: string; kind?: string }>()
   const router = useRouter()
   const qc = useQueryClient()
 
@@ -69,6 +70,9 @@ export default function ProductDetail() {
     queryFn: async () => (await api.get<AdminProduct>(`/admin/catalog/products/${id}`)).data,
     enabled: !creating,
   })
+  // accessories (cleaning solution, pouches…) share this form, minus the frame shape
+  const accessory = (creating ? newKind : product?.kind) === 'ACCESSORY'
+  const noun = accessory ? 'accessory' : 'frame'
 
   const [name, setName] = useState('')
   const [brand, setBrand] = useState('')
@@ -125,11 +129,15 @@ export default function ProductDetail() {
 
   async function save() {
     if (!name.trim()) {
-      setError('Give the frame a name.')
+      setError(`Give the ${noun} a name.`)
       return
     }
-    if (!sku.trim() || !price || !shape) {
+    if (!accessory && (!sku.trim() || !price || !shape)) {
       setError('Code, price and shape are needed so it shows up in the shop filters.')
+      return
+    }
+    if (accessory && (!sku.trim() || !price)) {
+      setError('Code and price are needed.')
       return
     }
     setBusy(true)
@@ -141,7 +149,8 @@ export default function ProductDetail() {
       name: name.trim(),
       brand: brand.trim(),
       description: creating ? null : product!.description,
-      frameCategoryCode: shape || null,
+      frameCategoryCode: accessory ? null : shape || null,
+      kind: accessory ? 'ACCESSORY' : 'FRAME',
       material: creating ? null : product!.material,
       colour: creating ? null : product!.colour,
       compareAtMinor: creating ? null : product!.compareAtMinor,
@@ -176,7 +185,7 @@ export default function ProductDetail() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Title>{creating ? 'New frame' : product!.name}</Title>
+      <Title>{creating ? `New ${noun}` : product!.name}</Title>
       {!creating && <Badge label={product!.status} tone={product!.status === 'ACTIVE' ? 'success' : 'neutral'} />}
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
@@ -201,10 +210,10 @@ export default function ProductDetail() {
         <Button label="From gallery" icon="image" variant="secondary" onPress={() => pick(false)} style={{ flex: 1 }} />
       </View>
 
-      <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Aviator Classic Gold" />
+      <Field label="Name" value={name} onChangeText={setName} placeholder={accessory ? 'e.g. Lens cleaning solution 60ml' : 'e.g. Aviator Classic Gold'} />
       <Field label="Code (SKU)" value={sku} onChangeText={setSku} autoCapitalize="characters" />
       <Field label="Brand" value={brand} onChangeText={setBrand} placeholder="e.g. Ray-Ban" autoCapitalize="words" />
-      <Select label="Frame shape" value={shape} options={SHAPES as any} onChange={setShape} />
+      {!accessory && <Select label="Frame shape" value={shape} options={SHAPES as any} onChange={setShape} />}
       <Field label="Barcode" value={barcode} onChangeText={setBarcode} />
       <Field label="Price (K)" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
       {admin && <Field label="Cost price (K)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />}
@@ -216,10 +225,10 @@ export default function ProductDetail() {
       <Select label="Status" value={status} options={STATUSES as any} onChange={setStatus} />
 
       {error && <Text style={{ fontFamily: font.medium, color: colors.danger }}>{error}</Text>}
-      <Button label={busy ? 'Saving…' : creating ? 'Add frame' : 'Save'} onPress={save} loading={busy} size="lg" />
+      <Button label={busy ? 'Saving…' : creating ? `Add ${noun}` : 'Save'} onPress={save} loading={busy} size="lg" />
       {admin && !creating && (
-        <Button label="Delete frame" icon="trash-2" variant="ghost" onPress={() =>
-          Alert.alert('Delete this frame?', 'For a frame added twice by mistake. It comes off the website and the shop straight away.', [
+        <Button label={`Delete ${noun}`} icon="trash-2" variant="ghost" onPress={() =>
+          Alert.alert(`Delete this ${noun}?`, `For a ${noun} added twice by mistake. It comes off the website and the shop straight away.`, [
             { text: 'Keep', style: 'cancel' },
             { text: 'Delete', style: 'destructive', onPress: async () => {
               try {

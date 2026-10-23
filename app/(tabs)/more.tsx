@@ -70,7 +70,7 @@ export default function More() {
       <View>
         <SectionLabel>Products</SectionLabel>
         <Card>
-          <ListRow tint={SECTION.products} icon="package" title="Products" subtitle="Add a frame: photo, code, brand, price & shape" onPress={() => router.push('/products')} />
+          <ListRow tint={SECTION.products} icon="package" title="Products" subtitle="Frames, lenses & accessories" onPress={() => router.push('/products')} />
         </Card>
       </View>
 

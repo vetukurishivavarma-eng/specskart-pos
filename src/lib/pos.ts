@@ -19,6 +19,8 @@ export type FrameProduct = {
   currency: string
   stockQty: number
   status: string
+  /** FRAME, LENS (a lens blank) or ACCESSORY (cleaning solution, pouch…) */
+  kind?: string
 }
 
 export type SaleItemView = {
