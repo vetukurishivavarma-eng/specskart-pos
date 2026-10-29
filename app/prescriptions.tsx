@@ -34,7 +34,7 @@ export default function PrescriptionsScreen() {
       {byName && !picked && q.length >= 2 && matches?.length === 0 && (
         <Text style={{ fontFamily: font.medium, color: colors.textMuted }}>No customer by that name. Try their number.</Text>
       )}
-      {(picked || !byName) && <Prescriptions phone={phone} askName={!picked} />}
+      {(picked || !byName) && <Prescriptions phone={phone} />}
     </ScrollView>
   )
 }

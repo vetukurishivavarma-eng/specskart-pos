@@ -12,7 +12,7 @@ import { RxTable, type Rx } from './RxTable'
 
 export type Entry = Rx & {
   id: string; kind: 'ONLINE' | 'SHOP' | 'SAVED'; at: string; pd: string | null
-  ref?: string; shopName?: string | null; lensStructure?: string | null; hasPhoto: boolean; savedBy?: string | null; leadId?: string
+  ref?: string; shopName?: string | null; lensStructure?: string | null; hasPhoto: boolean; savedBy?: string | null; leadId?: string; customerName?: string | null
 }
 
 const KIND: Record<Entry['kind'], string> = { ONLINE: 'Online order', SHOP: 'Shop sale', SAVED: 'Saved by staff' }
@@ -20,7 +20,7 @@ const KIND: Record<Entry['kind'], string> = { ONLINE: 'Online order', SHOP: 'Sho
 /** Every prescription we hold for this customer, newest first: online orders, counter sales (by number)
  *  and photos/numbers staff saved -- so nobody scrolls back through months of chat.
  *  leadId: on the lead screen; otherwise looked up by the phone typed (More -> Prescriptions). */
-export function Prescriptions({ leadId, phone, askName }: { leadId?: string; phone: string; askName?: boolean }) {
+export function Prescriptions({ leadId, phone }: { leadId?: string; phone: string }) {
   const digits = phone.replace(/\D/g, '')
   const token = useAuth((s) => s.token)
   const isAdmin = useAuth((s) => s.user?.role === 'ADMIN')
@@ -34,7 +34,11 @@ export function Prescriptions({ leadId, phone, askName }: { leadId?: string; pho
       : await api.get<Entry[]>('/admin/prescriptions', { params: { phone: digits } })).data,
     enabled: !!leadId || digits.length >= 9,
   })
-  const refresh = () => qc.invalidateQueries({ queryKey: ['prescriptions'] })
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['prescriptions'] })
+    qc.invalidateQueries({ queryKey: ['lead'] }) // the name typed with the numbers is the customer's name now
+    qc.invalidateQueries({ queryKey: ['rx-name'] })
+  }
 
   function remove(e: Entry) {
     Alert.alert('Remove this saved photo?', 'The photo and any numbers typed from it are deleted.', [
@@ -87,7 +91,7 @@ export function Prescriptions({ leadId, phone, askName }: { leadId?: string; pho
       ))}
 
       {(!!leadId || digits.length >= 9) && (
-        <AddPrescription phone={digits} askName={askName && data?.length === 0}
+        <AddPrescription phone={digits}
           onAdded={(id) => { setTyping(id); refresh() }} />
       )}
 
@@ -102,9 +106,8 @@ export function Prescriptions({ leadId, phone, askName }: { leadId?: string; pho
 
 /** On the counter bill: the last prescription on file for the number being typed, one tap to reuse it. */
 /** A paper prescription at the shop: photo (optional) now, numbers right after on its card. */
-function AddPrescription({ phone, askName, onAdded }: { phone: string; askName?: boolean; onAdded: (id: string) => void }) {
+function AddPrescription({ phone, onAdded }: { phone: string; onAdded: (id: string) => void }) {
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -121,13 +124,13 @@ function AddPrescription({ phone, askName, onAdded }: { phone: string; askName?:
   async function save() {
     setBusy(true)
     try {
-      const { id, leadId } = (await api.post<{ id: string; leadId: string }>('/admin/prescriptions', { phone, name: name.trim() || null })).data
+      const { id, leadId } = (await api.post<{ id: string; leadId: string }>('/admin/prescriptions', { phone })).data
       if (photo) {
         const form = new FormData()
         form.append('file', { uri: photo, name: 'prescription.jpg', type: 'image/jpeg' } as any)
         await api.post(`/admin/leads/${leadId}/prescriptions/${id}/photo`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
       }
-      setOpen(false); setPhoto(null); setName(''); setError(null)
+      setOpen(false); setPhoto(null); setError(null)
       onAdded(id)
     } catch (e) {
       setError(apiError(e))
@@ -140,13 +143,12 @@ function AddPrescription({ phone, askName, onAdded }: { phone: string; askName?:
   return (
     <Card style={{ gap: spacing.sm }}>
       <Text style={styles.bold}>Add prescription</Text>
-      {askName && <Field label="Customer name (optional)" value={name} onChangeText={setName} autoCapitalize="words" />}
       {photo && <Image source={{ uri: photo }} style={{ width: 160, height: 160, borderRadius: 8 }} />}
       <View style={styles.row}>
         <Button label={photo ? 'Retake' : 'Take photo'} icon="camera" variant="secondary" style={{ flex: 1 }} onPress={() => pick(true)} />
         <Button label="Pick photo" icon="image" variant="secondary" style={{ flex: 1 }} onPress={() => pick(false)} />
       </View>
-      <Text style={styles.faint}>The photo is optional; you type the numbers next.</Text>
+      <Text style={styles.faint}>The photo is optional; you type the name and numbers next.</Text>
       {error && <Text style={styles.error}>{error}</Text>}
       <View style={styles.row}>
         <Button label="Cancel" variant="ghost" style={{ flex: 1 }} onPress={() => { setOpen(false); setPhoto(null) }} />
@@ -191,16 +193,18 @@ function TypeNumbers({ leadId, entry, onDone }: { leadId: string; entry: Entry; 
   const [axisL, setAxisL] = useState(str(entry.axisLeft))
   const [add, setAdd] = useState(str(entry.addPower))
   const [pd, setPd] = useState(entry.pd ?? '')
+  const [name, setName] = useState(entry.customerName ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
+    if (!name.trim()) { setError("Type the customer's name as it is on the prescription."); return }
     setBusy(true)
     try {
       const axis = (v: string) => (v.trim() ? parseInt(v, 10) : null)
       await api.put(`/admin/leads/${leadId}/prescriptions/${entry.id}`, {
         sphRight: num(sphR), sphLeft: num(sphL), cylRight: num(cylR), cylLeft: num(cylL),
-        axisRight: axis(axisR), axisLeft: axis(axisL), addPower: num(add), pd: pd.trim() || null,
+        axisRight: axis(axisR), axisLeft: axis(axisL), addPower: num(add), pd: pd.trim() || null, customerName: name.trim(),
       })
       onDone()
     } catch (e) {
@@ -212,6 +216,7 @@ function TypeNumbers({ leadId, entry, onDone }: { leadId: string; entry: Entry; 
 
   return (
     <View style={{ gap: spacing.sm }}>
+      <Field label="Customer name" value={name} onChangeText={setName} autoCapitalize="words" placeholder="As on the prescription" />
       <View style={styles.row}>
         <View style={{ flex: 1 }}><Field label="SPH right" value={sphR} onChangeText={setSphR} keyboardType="numbers-and-punctuation" placeholder="-2.50" /></View>
         <View style={{ flex: 1 }}><Field label="SPH left" value={sphL} onChangeText={setSphL} keyboardType="numbers-and-punctuation" placeholder="-2.50" /></View>
