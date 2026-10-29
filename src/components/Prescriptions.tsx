@@ -5,14 +5,14 @@ import { Alert, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-na
 import { api, apiError, assetUrl } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { colors, font, spacing } from '../theme'
-import { Badge, Button, Card, Field, SectionLabel } from '../ui/components'
+import { Badge, Button, Card, Field, SectionLabel, Toggle } from '../ui/components'
 import { AuthedPhoto } from './AuthedPhoto'
 import { num } from '../lib/lens'
 import { RxTable, type Rx } from './RxTable'
 
 export type Entry = Rx & {
   id: string; kind: 'ONLINE' | 'SHOP' | 'SAVED'; at: string; pd: string | null
-  ref?: string; shopName?: string | null; lensStructure?: string | null; hasPhoto: boolean; savedBy?: string | null; leadId?: string; customerName?: string | null
+  ref?: string; shopName?: string | null; lensStructure?: string | null; hasPhoto: boolean; savedBy?: string | null; leadId?: string; customerName?: string | null; patientName?: string | null
 }
 
 const KIND: Record<Entry['kind'], string> = { ONLINE: 'Online order', SHOP: 'Shop sale', SAVED: 'Saved by staff' }
@@ -66,6 +66,7 @@ export function Prescriptions({ leadId, phone }: { leadId?: string; phone: strin
             <Badge label={KIND[e.kind]} tone={e.kind === 'SAVED' ? 'info' : 'accent'} />
             <Text style={styles.faint}>{new Date(e.at).toLocaleDateString()}</Text>
           </View>
+          {e.patientName && <Text style={styles.bold}>{e.patientName}</Text>}
           {(e.ref || e.shopName) && <Text style={styles.muted}>{[e.ref, e.shopName].filter(Boolean).join(' · ')}</Text>}
           {e.hasPhoto && (
             <AuthedPhoto uri={assetUrl(`/api/admin/leads/${e.leadId}/prescriptions/${e.id}/photo`)} token={token}
@@ -171,7 +172,7 @@ export function LastPrescription({ phone, onUse }: { phone: string; onUse: (e: E
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={styles.between}>
-        <Text style={styles.bold}>Last prescription on file</Text>
+        <Text style={styles.bold}>Last prescription on file{last.patientName ? ` · ${last.patientName}` : ''}</Text>
         <Text style={styles.faint}>{KIND[last.kind]} · {new Date(last.at).toLocaleDateString()}</Text>
       </View>
       <RxTable rx={last} />
@@ -193,18 +194,21 @@ function TypeNumbers({ leadId, entry, onDone }: { leadId: string; entry: Entry; 
   const [axisL, setAxisL] = useState(str(entry.axisLeft))
   const [add, setAdd] = useState(str(entry.addPower))
   const [pd, setPd] = useState(entry.pd ?? '')
-  const [name, setName] = useState(entry.customerName ?? '')
+  const [name, setName] = useState(entry.patientName ?? entry.customerName ?? '')
+  const [rename, setRename] = useState(true) // off for a family member's prescription
+  const current = entry.customerName?.trim() ?? ''
+  const differs = !!name.trim() && name.trim().toLowerCase() !== current.toLowerCase()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
-    if (!name.trim()) { setError("Type the customer's name as it is on the prescription."); return }
+    if (!name.trim()) { setError('Type the name written on the prescription.'); return }
     setBusy(true)
     try {
       const axis = (v: string) => (v.trim() ? parseInt(v, 10) : null)
       await api.put(`/admin/leads/${leadId}/prescriptions/${entry.id}`, {
         sphRight: num(sphR), sphLeft: num(sphL), cylRight: num(cylR), cylLeft: num(cylL),
-        axisRight: axis(axisR), axisLeft: axis(axisL), addPower: num(add), pd: pd.trim() || null, customerName: name.trim(),
+        axisRight: axis(axisR), axisLeft: axis(axisL), addPower: num(add), pd: pd.trim() || null, patientName: name.trim(), renameCustomer: differs && rename,
       })
       onDone()
     } catch (e) {
@@ -216,7 +220,11 @@ function TypeNumbers({ leadId, entry, onDone }: { leadId: string; entry: Entry; 
 
   return (
     <View style={{ gap: spacing.sm }}>
-      <Field label="Customer name" value={name} onChangeText={setName} autoCapitalize="words" placeholder="As on the prescription" />
+      <Field label="Name on the prescription" value={name} onChangeText={setName} autoCapitalize="words" placeholder="e.g. Mwila Banda" />
+      {differs && (
+        <Toggle label={current ? `Change the customer's name from "${current}"` : "Save as the customer's name"}
+          hint="Turn off if this is a family member's prescription" value={rename} onChange={setRename} />
+      )}
       <View style={styles.row}>
         <View style={{ flex: 1 }}><Field label="SPH right" value={sphR} onChangeText={setSphR} keyboardType="numbers-and-punctuation" placeholder="-2.50" /></View>
         <View style={{ flex: 1 }}><Field label="SPH left" value={sphL} onChangeText={setSphL} keyboardType="numbers-and-punctuation" placeholder="-2.50" /></View>
