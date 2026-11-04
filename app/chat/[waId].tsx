@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import * as IntentLauncher from 'expo-intent-launcher'
 import { useEffect, useRef, useState } from 'react'
-import { Image, KeyboardAvoidingView, Modal, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, Modal, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { api, apiError, assetUrl } from '../../src/lib/api'
 import { useAuth } from '../../src/lib/auth'
 import { colors, font, radius, spacing } from '../../src/theme'
@@ -158,8 +158,7 @@ export default function ChatScreen() {
   const title = data.name || `+${data.waId}`
   const copyable = (m: Message) => !!m.body && !m.body.startsWith('[')
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.canvas }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
       <Stack.Screen options={{ title }} />
 
       <View style={styles.status}>
@@ -169,7 +168,8 @@ export default function ChatScreen() {
           : <Badge label="Bot answering" tone="neutral" />}
       </View>
 
-      <ScrollView ref={scroll} contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}>
+      <ScrollView ref={scroll} contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+        onLayout={() => scroll.current?.scrollToEnd({ animated: false })}>
         {!data.known && (
           <Text style={styles.muted}>
             This customer has never messaged the business number, so there's no chat yet. Ask them to send us a
@@ -308,7 +308,7 @@ export default function ChatScreen() {
         ) : null}
         <Button label="Call instead" icon="phone" variant="secondary" onPress={() => Linking.openURL(`tel:+${data.waId}`)} />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 

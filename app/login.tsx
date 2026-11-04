@@ -2,7 +2,7 @@ import Constants from 'expo-constants'
 import { StatusBar } from 'expo-status-bar'
 import { Platform } from 'react-native'
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { api, apiError } from '../src/lib/api'
@@ -112,7 +112,7 @@ export default function Login() {
       <View style={styles.washGlow} />
 
       <SafeAreaView style={styles.flex}>
-        <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+        <View style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.brand}>
               <View style={styles.mark}>
@@ -236,7 +236,7 @@ export default function Login() {
 
             <Text style={styles.footnote}>Specskart</Text>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
     </View>
   )

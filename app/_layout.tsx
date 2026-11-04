@@ -11,7 +11,7 @@ import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@ex
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef } from 'react'
-import { AppState, View } from 'react-native'
+import { AppState, KeyboardAvoidingView, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors, font } from '../src/theme'
 import { Loading } from '../src/ui/components'
@@ -152,6 +152,10 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <UpdateGate>
         <AuthGate>
+          {/* Android draws edge-to-edge now, so the window no longer shrinks for the keyboard and it
+              covered whatever was at the bottom (client 2026-11-04: couldn't see the chat message being
+              typed). One padding wrapper here lifts every screen; screens must not add their own. */}
+          <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <Stack
             screenOptions={{
               headerShown: false,
@@ -207,6 +211,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', headerShown: false }} />
           </Stack>
+          </KeyboardAvoidingView>
         </AuthGate>
         {/* Over the navigator so a back gesture can't dismiss it -- shown only to a signed-in
             session, since it protects a live one rather than replacing the password. */}

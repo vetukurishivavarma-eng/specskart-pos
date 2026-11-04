@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { api, apiError, assetUrl } from '../../src/lib/api'
+import { FrameProduct } from '../../src/lib/pos'
 import { useAuth } from '../../src/lib/auth'
 import { colors, font, spacing } from '../../src/theme'
 import { Badge, Button, Field, Loading, Select, Title } from '../../src/ui/components'
@@ -70,6 +71,11 @@ export default function ProductDetail() {
     queryFn: async () => (await api.get<AdminProduct>(`/admin/catalog/products/${id}`)).data,
     enabled: !creating,
   })
+  // Same list (and cache) as the Products page -- used to say "already added" while typing.
+  const { data: all } = useQuery({
+    queryKey: ['catalog-products'],
+    queryFn: async () => (await api.get<FrameProduct[]>('/admin/catalog/products')).data,
+  })
   // accessories (cleaning solution, pouches…) share this form, minus the frame shape
   const accessory = (creating ? newKind : product?.kind) === 'ACCESSORY'
   const noun = accessory ? 'accessory' : 'frame'
@@ -102,6 +108,15 @@ export default function ProductDetail() {
     setStatus(product.status)
   }, [product])
 
+  // Client (2026-11-04): adding the same frame twice by mistake -- flag it before saving.
+  const norm = (v: string | null | undefined) => (v ?? '').trim().toLowerCase()
+  const dupe = (all ?? []).find((p) => p.id !== id && (
+    (norm(sku) && norm(p.sku) === norm(sku)) ||
+    (norm(barcode) && norm(p.barcode) === norm(barcode)) ||
+    (norm(name) && norm(p.name) === norm(name))))
+  const dupeWhy = !dupe ? '' : norm(sku) && norm(dupe.sku) === norm(sku) ? 'code'
+    : norm(barcode) && norm(dupe.barcode) === norm(barcode) ? 'barcode' : 'name'
+
   if (!creating && (isLoading || !product)) return <Loading />
 
   async function pick(camera: boolean) {
@@ -127,7 +142,16 @@ export default function ProductDetail() {
     ])
   }
 
-  async function save() {
+  async function save(force = false) {
+    // same code is refused by the server anyway; same name/barcode may be a real second frame
+    if (creating && dupe && !force && dupeWhy !== 'code') {
+      Alert.alert('Already added?', `"${dupe.name}" has the same ${dupeWhy}. Add this ${noun} anyway?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open existing', onPress: () => router.replace(`/products/${dupe.id}` as never) },
+        { text: 'Add anyway', onPress: () => save(true) },
+      ])
+      return
+    }
     if (!name.trim()) {
       setError(`Give the ${noun} a name.`)
       return
@@ -224,8 +248,17 @@ export default function ProductDetail() {
       </Text>
       <Select label="Status" value={status} options={STATUSES as any} onChange={setStatus} />
 
+      {dupe && (
+        <View style={{ gap: spacing.xs, padding: spacing.md, borderRadius: 8, backgroundColor: colors.dangerSoft, borderWidth: 1, borderColor: colors.danger }}>
+          <Text style={{ fontFamily: font.semibold, color: colors.danger }}>
+            Already added: "{dupe.name}" has the same {dupeWhy}{dupe.sku ? ` (code ${dupe.sku})` : ''}, {dupe.stockQty} in stock.
+          </Text>
+          <Button label="Open that one instead" icon="external-link" variant="secondary"
+            onPress={() => router.replace(`/products/${dupe.id}` as never)} />
+        </View>
+      )}
       {error && <Text style={{ fontFamily: font.medium, color: colors.danger }}>{error}</Text>}
-      <Button label={busy ? 'Saving…' : creating ? `Add ${noun}` : 'Save'} onPress={save} loading={busy} size="lg" />
+      <Button label={busy ? 'Saving…' : creating ? `Add ${noun}` : 'Save'} onPress={() => save()} loading={busy} size="lg" />
       {admin && !creating && (
         <Button label={`Delete ${noun}`} icon="trash-2" variant="ghost" onPress={() =>
           Alert.alert(`Delete this ${noun}?`, `For a ${noun} added twice by mistake. It comes off the website and the shop straight away.`, [
