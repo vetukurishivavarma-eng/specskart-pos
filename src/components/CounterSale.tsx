@@ -63,6 +63,8 @@ export default function CounterSale() {
   const [customerName, setCustomerName] = useState('')
   const [phone, setPhone] = useState('')
   const [discount, setDiscount] = useState('')
+  const [consultFee, setConsultFee] = useState('')
+  const [fittingFee, setFittingFee] = useState('')
   const [method, setMethod] = useState<string>('CASH')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -123,6 +125,12 @@ export default function CounterSale() {
   const framesGross = cart.reduce((sum, l) => sum + l.product.priceMinor * l.quantity, 0)
   const gross = framesGross + (lensPrice ?? 0)
   const discountMinor = Math.max(0, Math.round((num(discount) ?? 0) * 100))
+  // Fees are services, not stock: paid in full today, never discounted.
+  const charges = [
+    { name: 'Consultation fee', amountMinor: Math.max(0, Math.round((num(consultFee) ?? 0) * 100)) },
+    { name: 'Fitting charges', amountMinor: Math.max(0, Math.round((num(fittingFee) ?? 0) * 100)) },
+  ].filter((c) => c.amountMinor > 0)
+  const chargesMinor = charges.reduce((sum, c) => sum + c.amountMinor, 0)
   const tooMuch = discountMinor > 0 && (!withLens || lensPrice !== undefined) && discountMinor > gross
 
   // One discount for the whole bill, split by value between the lenses and the frames. Without
@@ -144,18 +152,18 @@ export default function CounterSale() {
   }
 
   // A deposit is taken against the lenses only: frames are paid for at the counter.
-  const billTotal = Math.max(0, gross - discountMinor)
-  const framesNet = framesGross - framesDiscount
+  const billTotal = Math.max(0, gross - discountMinor) + chargesMinor
+  const framesNet = framesGross - framesDiscount + chargesMinor // everything paid at the counter today
   const lensNet = lensPrice === undefined ? undefined : lensPrice - lensDiscount
   const payNowMinor = num(payingNow) === null ? null : Math.round((num(payingNow) ?? 0) * 100)
   const lensDeposit = !withLens || takesNow || payNowMinor === null ? null : payNowMinor - framesNet
   const depositProblem = lensDeposit === null ? null
-    : lensDeposit < 0 ? `Pay at least ${formatKwacha(framesNet)} — the frames are paid in full today`
+    : lensDeposit < 0 ? `Pay at least ${formatKwacha(framesNet)} — frames and fees are paid in full today`
     : lensNet !== undefined && lensDeposit > lensNet ? "That's more than the bill"
     : null
   const balanceDue = lensDeposit !== null && lensNet !== undefined ? Math.max(0, lensNet - lensDeposit) : 0
 
-  const hasSomething = cart.length > 0 || withLens
+  const hasSomething = cart.length > 0 || withLens || chargesMinor > 0
   const canCharge = hasSomething && !tooMuch && !depositProblem && (!withLens || (customerName.trim().length > 0 && (!structure || num(add) !== null)))
 
   async function charge() {
@@ -165,10 +173,11 @@ export default function CounterSale() {
     const ref = Crypto.randomUUID()
     const off = lineDiscounts()
     const body = {
-      frame: cart.length > 0 && store ? {
+      frame: (cart.length > 0 || chargesMinor > 0) && store ? {
         storeId: store.id,
         items: cart.map((l, i) => ({ productId: l.product.id, quantity: l.quantity, unitPriceMinor: null, discountMinor: off[i] || null })),
-        payments: [{ method, amountMinor: framesGross - framesDiscount, reference: null }],
+        payments: [{ method, amountMinor: framesNet, reference: null }],
+        charges,
         customerName: customerName.trim() || null,
         customerPhone: phone.trim() || null,
         notes: '',
@@ -219,7 +228,7 @@ export default function CounterSale() {
     setCart([]); setQuery(''); setWithLens(false); setLensType('CLEAR'); setBlueBlock(false); setStructure('')
     setSphR(''); setSphL(''); setCylR(''); setCylL(''); setAdd('')
     setAxisR(''); setAxisL(''); setPd(''); setTakesNow(false); setPayingNow('')
-    setCustomerName(''); setPhone(''); setDiscount(''); setMethod('CASH')
+    setCustomerName(''); setPhone(''); setDiscount(''); setConsultFee(''); setFittingFee(''); setMethod('CASH')
   }
 
   if (done) {
@@ -328,6 +337,17 @@ export default function CounterSale() {
         )}
       </Card>
 
+      {/* ---- fees ---- */}
+      {store && (
+        <Card style={{ gap: spacing.md }}>
+          <SectionLabel>Fees</SectionLabel>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flex: 1 }}><Field label="Consultation fee (K)" value={consultFee} onChangeText={setConsultFee} keyboardType="decimal-pad" placeholder="0" /></View>
+            <View style={{ flex: 1 }}><Field label="Fitting charges (K)" value={fittingFee} onChangeText={setFittingFee} keyboardType="decimal-pad" placeholder="0" /></View>
+          </View>
+        </Card>
+      )}
+
       {/* ---- the bill ---- */}
       {hasSomething && (
         <Card style={{ gap: spacing.md }}>
@@ -360,6 +380,7 @@ export default function CounterSale() {
             {cart.length > 0 && <StatRow label="Frames" value={formatKwacha(framesGross)} />}
             {withLens && <StatRow label="Lenses" value={lensPrice !== undefined ? formatKwacha(lensPrice) : '—'} />}
             {discountMinor > 0 && <StatRow label="Discount" value={`- ${formatKwacha(discountMinor)}`} />}
+            {charges.map((c) => <StatRow key={c.name} label={c.name} value={formatKwacha(c.amountMinor)} />)}
             <StatRow label="Total" value={withLens && lensPrice === undefined ? '—' : formatKwacha(billTotal)} emphasis />
             {balanceDue > 0 && <StatRow label="Paying now" value={formatKwacha(payNowMinor ?? 0)} />}
             {balanceDue > 0 && <StatRow label="Balance at pickup" value={formatKwacha(balanceDue)} />}

@@ -56,7 +56,7 @@ export default function Refund() {
       <Title>Refund {sale.receiptNumber}</Title>
 
       <Card style={{ gap: spacing.sm }}>
-        {sale.items.map((item) => (
+        {sale.items.filter((i) => i.productId).map((item) => ( // fees (no product) are not refundable stock
           <View key={item.productId} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 14, color: colors.text }} numberOfLines={1}>
               {item.productName} (sold {item.quantity})
